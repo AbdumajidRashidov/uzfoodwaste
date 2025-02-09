@@ -14,6 +14,12 @@ export const config = {
       process.env.GOOGLE_CALLBACK_URL ||
       "http://localhost:3000/api/auth/google/callback",
   },
+  apple: {
+    clientId: process.env.APPLE_CLIENT_ID,
+    teamId: process.env.APPLE_TEAM_ID,
+    keyId: process.env.APPLE_KEY_ID,
+    privateKey: process.env.APPLE_PRIVATE_KEY,
+  },
   email: {
     host: process.env.EMAIL_HOST,
     port: parseInt(process.env.EMAIL_PORT || "578"),

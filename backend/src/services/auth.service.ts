@@ -2,6 +2,7 @@
 import * as crypto from "crypto";
 import bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
+import appleSignin from "apple-signin-auth";
 import { config } from "../config/environment";
 import { AppError } from "../middlewares/error.middleware";
 import { OAuth2Client } from "google-auth-library";
@@ -200,7 +201,76 @@ export class AuthService {
       throw new AppError("Invalid Google token", 401);
     }
   }
+  async verifyAppleToken(
+    idToken: string,
+    userInfo?: {
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+    }
+  ) {
+    try {
+      // Verify the Apple ID token
+      const appleUser = await appleSignin.verifyIdToken(idToken, {
+        audience: config.apple.clientId, // Your Apple Service ID
+        ignoreExpiration: false,
+      });
 
+      if (!appleUser.email) {
+        throw new AppError("Email not found in Apple token", 401);
+      }
+
+      // Check if user exists
+      let user = await prisma.user.findUnique({
+        where: { email: appleUser.email },
+      });
+
+      if (!user) {
+        // Create new user
+        const result = await prisma.$transaction(async (prisma) => {
+          // Create user
+          const user = await prisma.user.create({
+            data: {
+              email: appleUser.email!,
+              password: "", // Apple auth doesn't need password
+              phone: "", // Will need to be updated later
+              role: "CUSTOMER", // Default role
+              is_verified: true, // Apple verified email
+            },
+          });
+
+          // Create customer profile
+          await prisma.customer.create({
+            data: {
+              user_id: user.id,
+              first_name: userInfo?.firstName || "",
+              last_name: userInfo?.lastName || "",
+            },
+          });
+
+          return user;
+        });
+
+        user = result;
+      }
+
+      // Generate token
+      const token = this.generateToken(user.id);
+
+      return {
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          is_verified: user.is_verified,
+        },
+      };
+    } catch (error) {
+      console.error("Apple auth error:", error);
+      throw new AppError("Invalid Apple token", 401);
+    }
+  }
   async forgotPassword(email: string) {
     // Find user
     const user = await prisma.user.findUnique({

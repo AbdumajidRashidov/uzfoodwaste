@@ -95,6 +95,71 @@ const authController = new AuthController();
  *                   example: Invalid Google token
  */
 router.post("/google", authController.googleAuth);
+/**
+ * @swagger
+ * /api/auth/apple:
+ *   post:
+ *     summary: Authenticate with Apple
+ *     description: |
+ *       Authenticate using an Apple ID token. The token should be obtained from
+ *       the Apple Sign In process on the client side.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - idToken
+ *             properties:
+ *               idToken:
+ *                 type: string
+ *                 description: Apple ID token obtained from Apple Sign In
+ *               userInfo:
+ *                 type: object
+ *                 description: User information from Apple (only provided on first sign in)
+ *                 properties:
+ *                   firstName:
+ *                     type: string
+ *                   lastName:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: string
+ *                       description: JWT token for authentication
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                         email:
+ *                           type: string
+ *                         role:
+ *                           type: string
+ *                         is_verified:
+ *                           type: boolean
+ *       400:
+ *         description: Missing or invalid token
+ *       401:
+ *         description: Invalid Apple token
+ */
+router.post("/apple", authController.appleAuth);
 
 /**
  * @swagger

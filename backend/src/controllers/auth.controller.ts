@@ -49,7 +49,24 @@ export class AuthController {
       next(error);
     }
   }
+  async appleAuth(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { idToken, userInfo } = req.body;
 
+      if (!idToken) {
+        throw new AppError("Apple ID token is required", 400);
+      }
+
+      const result = await authService.verifyAppleToken(idToken, userInfo);
+
+      res.status(200).json({
+        status: "success",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
   async forgotPassword(req: Request, res: Response, next: NextFunction) {
     try {
       const { email } = req.body;
