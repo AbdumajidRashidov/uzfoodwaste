@@ -14,4 +14,13 @@ export const config = {
       process.env.GOOGLE_CALLBACK_URL ||
       "http://localhost:3000/api/auth/google/callback",
   },
+  email: {
+    host: process.env.EMAIL_HOST,
+    port: parseInt(process.env.EMAIL_PORT || "578"),
+    secure: process.env.EMAIL_PORT === "465",
+    user: process.env.EMAIL_USER,
+    password: process.env.EMAIL_PASSWORD,
+    from: process.env.EMAIL_FROM,
+  },
+  clientUrl: process.env.CLIENT_URL,
 };

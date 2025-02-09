@@ -1,10 +1,14 @@
 // src/services/auth.service.ts
-import { PrismaClient } from "@prisma/client";
+import * as crypto from "crypto";
 import bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
 import { config } from "../config/environment";
 import { AppError } from "../middlewares/error.middleware";
 import { OAuth2Client } from "google-auth-library";
+import { PrismaClient } from "@prisma/client";
+import { EmailService } from "./email.service";
+
+const emailService = new EmailService();
 
 const googleClient = new OAuth2Client(
   config.google.clientId,
@@ -195,5 +199,95 @@ export class AuthService {
     } catch (error) {
       throw new AppError("Invalid Google token", 401);
     }
+  }
+
+  async forgotPassword(email: string) {
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new AppError("No user found with that email address", 404);
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const passwordResetToken = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+
+    const passwordResetExpires = new Date(Date.now() + 3600000); // 1 hour
+
+    // Save reset token to database
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password_reset_token: passwordResetToken,
+        password_reset_expires: passwordResetExpires,
+      },
+    });
+
+    try {
+      // Send reset email
+      await emailService.sendPasswordResetEmail(email, resetToken);
+
+      return {
+        status: "success",
+        message: "Password reset link sent to email",
+      };
+    } catch (error) {
+      console.error("Password reset error:", error);
+      // If email fails, remove reset token
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          password_reset_token: null,
+          password_reset_expires: null,
+        },
+      });
+
+      throw new AppError(
+        "Error sending password reset email. Please try again.",
+        500
+      );
+    }
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    // Hash the token for comparison
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    // Find user with valid token
+    const user = await prisma.user.findFirst({
+      where: {
+        password_reset_token: hashedToken,
+        password_reset_expires: {
+          gt: new Date(),
+        },
+      },
+    });
+
+    if (!user) {
+      throw new AppError("Invalid or expired password reset token", 400);
+    }
+
+    // Update password
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        password_reset_token: null,
+        password_reset_expires: null,
+      },
+    });
+
+    return {
+      status: "success",
+      message: "Password successfully reset",
+    };
   }
 }
