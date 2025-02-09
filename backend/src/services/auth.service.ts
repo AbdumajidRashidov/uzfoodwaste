@@ -4,6 +4,12 @@ import bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
 import { config } from "../config/environment";
 import { AppError } from "../middlewares/error.middleware";
+import { OAuth2Client } from "google-auth-library";
+
+const googleClient = new OAuth2Client(
+  config.google.clientId,
+  config.google.clientSecret
+);
 
 const prisma = new PrismaClient();
 
@@ -125,5 +131,69 @@ export class AuthService {
         is_verified: user.is_verified,
       },
     };
+  }
+
+  async verifyGoogleToken(token: string) {
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: token,
+        audience: config.google.clientId,
+      });
+
+      const payload = ticket.getPayload();
+      if (!payload) {
+        throw new AppError("Invalid Google token", 401);
+      }
+
+      // Check if user exists
+      let user = await prisma.user.findUnique({
+        where: { email: payload.email },
+      });
+
+      if (!user) {
+        // Create new user
+        const result = await prisma.$transaction(async (prisma) => {
+          // Create user
+          const user = await prisma.user.create({
+            data: {
+              email: payload.email!,
+              password: "", // Google auth doesn't need password
+              phone: "", // Will need to be updated later
+              role: "CUSTOMER", // Default role
+              is_verified: true, // Google verified email
+            },
+          });
+
+          // Create customer profile
+          await prisma.customer.create({
+            data: {
+              user_id: user.id,
+              first_name: payload.given_name || "",
+              last_name: payload.family_name || "",
+              profile_picture: payload.picture,
+            },
+          });
+
+          return user;
+        });
+
+        user = result;
+      }
+
+      // Generate token
+      const jwtToken = this.generateToken(user.id);
+
+      return {
+        token: jwtToken,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          is_verified: user.is_verified,
+        },
+      };
+    } catch (error) {
+      throw new AppError("Invalid Google token", 401);
+    }
   }
 }
