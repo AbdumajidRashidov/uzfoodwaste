@@ -28,7 +28,6 @@ export class AuthService {
       } as jwt.SignOptions
     );
   }
-
   async register(userData: {
     email: string;
     password: string;
@@ -106,7 +105,6 @@ export class AuthService {
 
     return { token, user: result };
   }
-
   async login(email: string, password: string) {
     // Find user
     const user = await prisma.user.findUnique({
@@ -137,7 +135,6 @@ export class AuthService {
       },
     };
   }
-
   async verifyGoogleToken(token: string) {
     try {
       const ticket = await googleClient.verifyIdToken({
@@ -324,7 +321,6 @@ export class AuthService {
       );
     }
   }
-
   async resetPassword(token: string, newPassword: string) {
     // Hash the token for comparison
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
