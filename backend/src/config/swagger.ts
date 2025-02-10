@@ -23,21 +23,6 @@ const options = {
           bearerFormat: "JWT",
         },
       },
-      schemas: {
-        Error: {
-          type: "object",
-          properties: {
-            status: {
-              type: "string",
-              example: "error",
-            },
-            message: {
-              type: "string",
-              example: "Error message description",
-            },
-          },
-        },
-      },
     },
   },
   apis: ["./src/routes/*.ts", "./src/docs/*.ts"], // Path to the API routes
