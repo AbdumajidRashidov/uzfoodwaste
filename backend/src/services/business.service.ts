@@ -5,6 +5,72 @@ import { AppError } from "../middlewares/error.middleware";
 const prisma = new PrismaClient();
 
 export class BusinessService {
+  async getAllBusinesses(query: {
+    page?: number;
+    limit?: number;
+    isVerified?: boolean;
+    searchTerm?: string;
+  }) {
+    const page = query.page || 1;
+    const limit = query.limit || 10;
+    const skip = (page - 1) * limit;
+
+    // Build the where clause based on query parameters
+    const where: any = {};
+
+    if (query.isVerified !== undefined) {
+      where.is_verified = query.isVerified;
+    }
+
+    if (query.searchTerm) {
+      where.OR = [
+        { company_name: { contains: query.searchTerm, mode: "insensitive" } },
+        { legal_name: { contains: query.searchTerm, mode: "insensitive" } },
+        { business_type: { contains: query.searchTerm, mode: "insensitive" } },
+      ];
+    }
+
+    // Get total count for pagination
+    const total = await prisma.business.count({ where });
+
+    // Get businesses with pagination
+    const businesses = await prisma.business.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            email: true,
+            phone: true,
+            is_verified: true,
+            created_at: true,
+          },
+        },
+        locations: {
+          where: {
+            is_main_location: true,
+          },
+          take: 1,
+        },
+      },
+      skip,
+      take: limit,
+      orderBy: {
+        locations: {
+          _count: "desc",
+        },
+      },
+    });
+
+    return {
+      businesses,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
   async getBusinessProfile(businessId: string) {
     const business = await prisma.business.findUnique({
       where: { id: businessId },

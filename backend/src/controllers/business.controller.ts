@@ -5,6 +5,29 @@ import { BusinessService } from "../services/business.service";
 const businessService = new BusinessService();
 
 export class BusinessController {
+  async getAllBusinesses(req: Request, res: Response, next: NextFunction) {
+    try {
+      const query = {
+        page: req.query.page ? parseInt(req.query.page as string) : undefined,
+        limit: req.query.limit
+          ? parseInt(req.query.limit as string)
+          : undefined,
+        isVerified: req.query.isVerified
+          ? req.query.isVerified === "true"
+          : undefined,
+        searchTerm: req.query.search as string | undefined,
+      };
+
+      const result = await businessService.getAllBusinesses(query);
+
+      res.status(200).json({
+        status: "success",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
   async getBusinessProfile(req: Request, res: Response, next: NextFunction) {
     try {
       const businessId = req.params.businessId;
@@ -18,7 +41,6 @@ export class BusinessController {
       next(error);
     }
   }
-
   async updateBusinessProfile(req: Request, res: Response, next: NextFunction) {
     try {
       const businessId = req.params.businessId;
@@ -35,7 +57,6 @@ export class BusinessController {
       next(error);
     }
   }
-
   async addBusinessLocation(req: Request, res: Response, next: NextFunction) {
     try {
       const businessId = req.params.businessId;
@@ -52,7 +73,6 @@ export class BusinessController {
       next(error);
     }
   }
-
   async updateBusinessLocation(
     req: Request,
     res: Response,
@@ -74,7 +94,6 @@ export class BusinessController {
       next(error);
     }
   }
-
   async deleteBusinessLocation(
     req: Request,
     res: Response,
@@ -95,7 +114,6 @@ export class BusinessController {
       next(error);
     }
   }
-
   async getBusinessLocations(req: Request, res: Response, next: NextFunction) {
     try {
       const businessId = req.params.businessId;
@@ -109,7 +127,6 @@ export class BusinessController {
       next(error);
     }
   }
-
   async getBusinessStats(req: Request, res: Response, next: NextFunction) {
     try {
       const businessId = req.params.businessId;
