@@ -12,6 +12,7 @@ import customerRoutes from "./routes/customer.routes";
 import foodListingRoutes from "./routes/food-listing.routes";
 import categoryRoutes from "./routes/category.routes";
 import reservationRoutes from "./routes/reservation.routes";
+import reviewRoutes from "./routes/review.routes";
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use("/api/customers", customerRoutes);
 app.use("/api/food-listings", foodListingRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/reservations", reservationRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 // Error handling
 app.use(errorHandler);
