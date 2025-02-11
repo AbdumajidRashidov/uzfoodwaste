@@ -7,6 +7,7 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "24h",
   nodeEnv: process.env.NODE_ENV || "development",
+  clientUrl: process.env.CLIENT_URL,
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
@@ -28,5 +29,56 @@ export const config = {
     password: process.env.EMAIL_PASSWORD,
     from: process.env.EMAIL_FROM,
   },
-  clientUrl: process.env.CLIENT_URL,
+  firebase: {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY || "",
+  },
+  twilio: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID,
+    authToken: process.env.TWILIO_AUTH_TOKEN,
+    phoneNumber: process.env.TWILIO_PHONE_NUMBER,
+    verifyServiceSid: process.env.TWILIO_VERIFY_SERVICE_SID,
+  },
 };
+
+// Validate required Firebase configuration
+const requiredFirebaseEnvVars = [
+  "FIREBASE_PROJECT_ID",
+  "FIREBASE_CLIENT_EMAIL",
+  "FIREBASE_PRIVATE_KEY",
+];
+
+requiredFirebaseEnvVars.forEach((envVar) => {
+  if (!process.env[envVar]) {
+    console.warn(`Warning: ${envVar} environment variable is not set`);
+  }
+});
+
+// Validate Twilio configuration
+const validateTwilioConfig = () => {
+  const { accountSid, authToken, phoneNumber, verifyServiceSid } =
+    config.twilio;
+
+  if (!accountSid || !accountSid.startsWith("AC")) {
+    console.warn(
+      'Warning: Invalid or missing TWILIO_ACCOUNT_SID. Must start with "AC"'
+    );
+  }
+
+  if (!authToken) {
+    console.warn("Warning: Missing TWILIO_AUTH_TOKEN");
+  }
+
+  if (!phoneNumber) {
+    console.warn("Warning: Missing TWILIO_PHONE_NUMBER");
+  }
+
+  if (!verifyServiceSid || !verifyServiceSid.startsWith("VA")) {
+    console.warn(
+      'Warning: Invalid or missing TWILIO_VERIFY_SERVICE_SID. Must start with "VA"'
+    );
+  }
+};
+
+validateTwilioConfig();

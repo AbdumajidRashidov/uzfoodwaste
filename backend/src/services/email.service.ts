@@ -37,6 +37,28 @@ export class EmailService {
       // Don't throw error to prevent disrupting the main flow
     }
   }
+  async sendNotificationEmail(
+    to: string,
+    data: {
+      title: string;
+      message: string;
+    }
+  ) {
+    const subject = data.title;
+    const html = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h1 style="color: #333;">${data.title}</h1>
+        <p style="font-size: 16px; color: #666;">${data.message}</p>
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+          <p style="font-size: 12px; color: #999;">
+            This is an automated notification from your app.
+          </p>
+        </div>
+      </div>
+    `;
+
+    await this.sendEmail({ to, subject, html });
+  }
 
   async sendReservationCreatedEmail(
     to: string,

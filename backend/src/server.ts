@@ -14,6 +14,9 @@ import categoryRoutes from "./routes/category.routes";
 import reservationRoutes from "./routes/reservation.routes";
 import reviewRoutes from "./routes/review.routes";
 import savedListingRoutes from "./routes/saved-listing.routes";
+import listingCategoryRoutes from "./routes/listing-category.routes";
+import notificationRoutes from "./routes/notification.routes";
+import deviceRoutes from "./routes/device.routes";
 
 const app = express();
 
@@ -40,6 +43,9 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/reservations", reservationRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/saved-listings", savedListingRoutes);
+app.use("/api/listing-categories", listingCategoryRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/devices", deviceRoutes);
 
 // Error handling
 app.use(errorHandler);
