@@ -40,4 +40,9 @@ export const config = {
     phoneNumber: process.env.TWILIO_PHONE_NUMBER,
     verifyServiceSid: process.env.TWILIO_VERIFY_SERVICE_SID,
   },
+  ngrok: {
+    authToken: process.env.NGROK_AUTH_TOKEN,
+    region: process.env.NGROK_REGION || "us",
+    enabled: process.env.ENABLE_TUNNEL === "true",
+  },
 };

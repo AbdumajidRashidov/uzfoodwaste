@@ -1,5 +1,13 @@
 // src/config/swagger.ts
 import swaggerJsdoc from "swagger-jsdoc";
+import { TunnelService } from "../services/tunnel.service";
+
+const getServerUrl = () => {
+  const tunnelService = TunnelService.getInstance();
+  const tunnelUrl = tunnelService.getUrl();
+
+  return tunnelUrl || "http://localhost:3000";
+};
 
 const options = {
   definition: {
@@ -11,7 +19,7 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:3000",
+        url: getServerUrl(),
         description: "Development server",
       },
     ],
@@ -23,9 +31,24 @@ const options = {
           bearerFormat: "JWT",
         },
       },
+      schemas: {
+        Error: {
+          type: "object",
+          properties: {
+            status: {
+              type: "string",
+              example: "error",
+            },
+            message: {
+              type: "string",
+              example: "Error message description",
+            },
+          },
+        },
+      },
     },
   },
-  apis: ["./src/routes/*.ts", "./src/docs/*.ts"], // Path to the API routes
+  apis: ["./src/routes/*.ts", "./src/docs/*.ts"],
 };
 
 export const specs = swaggerJsdoc(options);

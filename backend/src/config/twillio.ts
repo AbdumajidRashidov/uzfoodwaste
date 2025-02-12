@@ -1,5 +1,6 @@
-import { config } from "./environment";
 // Validate Twilio configuration
+import { config } from "./environment";
+
 const validateTwilioConfig = () => {
   const { accountSid, authToken, phoneNumber, verifyServiceSid } =
     config.twilio;

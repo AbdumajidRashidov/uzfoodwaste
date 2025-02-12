@@ -1,0 +1,11 @@
+version: 2
+authtoken: ${NGROK_AUTH_TOKEN}
+tunnels:
+  web:
+    proto: http
+    addr: 3000
+    inspect: true
+web_addr: localhost:4040
+log_level: info
+log: ./ngrok.log
+metadata: '{"project": "food-waste-api"}'

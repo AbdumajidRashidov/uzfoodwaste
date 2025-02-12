@@ -6,3 +6,4 @@ build/
 db
 prisma
 firebase.json
+ngrok.yaml
