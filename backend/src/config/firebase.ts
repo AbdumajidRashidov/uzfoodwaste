@@ -22,3 +22,16 @@ if (!admin.apps.length) {
 }
 
 export const firebaseAdmin = admin;
+
+// Validate required Firebase configuration
+const requiredFirebaseEnvVars = [
+  "FIREBASE_PROJECT_ID",
+  "FIREBASE_CLIENT_EMAIL",
+  "FIREBASE_PRIVATE_KEY",
+];
+
+requiredFirebaseEnvVars.forEach((envVar) => {
+  if (!process.env[envVar]) {
+    console.warn(`Warning: ${envVar} environment variable is not set`);
+  }
+});
