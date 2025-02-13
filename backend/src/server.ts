@@ -11,21 +11,65 @@ import { TunnelService } from "./services/tunnel.service";
 
 const app = express();
 
-// Middleware
+// CORS configuration
+const corsOptions = {
+  origin: (origin: any, callback: any) => {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Allow localhost and ngrok URLs
+    const allowedOrigins = [
+      "http://localhost:3000",
+      "http://localhost:4000",
+      "http://127.0.0.1:3000",
+      "http://127.0.0.1:4000",
+    ];
+
+    // Check if the origin is an ngrok URL
+    if (origin.includes("ngrok.io") || origin.includes("ngrok-free.app")) {
+      return callback(null, true);
+    }
+
+    // Check against allowed origins
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      return callback(null, true);
+    }
+
+    callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+    "Origin",
+  ],
+  exposedHeaders: ["Content-Range", "X-Content-Range"],
+};
+
+// Apply CORS before other middleware
+app.use(cors(corsOptions));
+
+// Security headers
 app.use(
-  cors({
-    origin: "*", // Replace with allowed domains in production
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+  helmet({
+    crossOriginResourcePolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
+    contentSecurityPolicy: false,
   })
 );
-app.use(helmet());
+
 app.use(express.json());
 
 // Swagger Documentation
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
-// Mount all routes from index.routes.ts
+// Mount all routes
 app.use("/", indexRoutes);
 
 // Error handling

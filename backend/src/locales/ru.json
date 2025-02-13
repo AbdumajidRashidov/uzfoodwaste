@@ -1,0 +1,302 @@
+{
+    "common": {
+        "success": "Успешно",
+        "error": "Ошибка",
+        "notFound": "Не найдено",
+        "unauthorized": "Нет доступа",
+        "forbidden": "Доступ запрещен",
+        "validationError": "Ошибка валидации",
+        "serverError": "Произошла ошибка сервера",
+        "edit": "Редактировать",
+        "delete": "Удалить",
+        "save": "Сохранить",
+        "cancel": "Отмена",
+        "confirm": "Подтвердить",
+        "loading": "Загрузка...",
+        "noResults": "Результаты не найдены",
+        "search": "Поиск",
+        "filter": "Фильтр",
+        "sort": "Сортировка",
+        "page": "Страница {number}",
+        "showing": "Показано с {start} по {end} из {total} записей",
+        "currency": {
+            "uzs": "сум",
+            "format": "{amount} сум"
+        },
+        "status": {
+            "active": "Активный",
+            "inactive": "Неактивный",
+            "pending": "В ожидании",
+            "completed": "Завершено",
+            "cancelled": "Отменено"
+        }
+    },
+    "auth": {
+        "login": {
+            "title": "Вход",
+            "success": "Вход выполнен успешно",
+            "error": "Неверные учетные данные",
+            "emailPlaceholder": "Введите email",
+            "passwordPlaceholder": "Введите пароль",
+            "rememberMe": "Запомнить меня",
+            "forgotPassword": "Забыли пароль?",
+            "googleLogin": "Войти через Google",
+            "appleLogin": "Войти через Apple"
+        },
+        "register": {
+            "title": "Регистрация",
+            "success": "Регистрация успешно завершена",
+            "error": "Ошибка при регистрации",
+            "emailExists": "Email уже существует",
+            "customerTitle": "Регистрация как покупатель",
+            "businessTitle": "Регистрация как бизнес",
+            "fields": {
+                "email": "Email",
+                "password": "Пароль",
+                "confirmPassword": "Подтвердите пароль",
+                "phone": "Номер телефона",
+                "firstName": "Имя",
+                "lastName": "Фамилия",
+                "companyName": "Название компании",
+                "legalName": "Юридическое название",
+                "taxNumber": "ИНН"
+            }
+        },
+        "forgotPassword": {
+            "title": "Восстановление пароля",
+            "success": "Инструкции по восстановлению отправлены на email",
+            "error": "Не удалось отправить инструкции",
+            "emailSent": "Проверьте вашу почту"
+        },
+        "resetPassword": {
+            "title": "Сброс пароля",
+            "success": "Пароль успешно изменен",
+            "error": "Не удалось сбросить пароль",
+            "invalidToken": "Недействительная или просроченная ссылка"
+        },
+        "verification": {
+            "email": {
+                "title": "Подтверждение email",
+                "success": "Email успешно подтвержден",
+                "error": "Не удалось подтвердить email",
+                "pending": "Пожалуйста, подтвердите ваш email"
+            },
+            "phone": {
+                "title": "Подтверждение телефона",
+                "success": "Номер телефона успешно подтвержден",
+                "error": "Не удалось подтвердить телефон",
+                "codeSent": "Код подтверждения отправлен на ваш телефон",
+                "enterCode": "Введите код подтверждения"
+            }
+        }
+    },
+    "business": {
+        "profile": {
+            "title": "Профиль бизнеса",
+            "edit": "Редактировать профиль",
+            "verification": {
+                "pending": "Ожидает проверки",
+                "verified": "Бизнес подтвержден",
+                "rejected": "Проверка отклонена"
+            },
+            "fields": {
+                "companyName": "Название компании",
+                "legalName": "Юридическое название",
+                "taxNumber": "ИНН",
+                "businessLicense": "Лицензия",
+                "businessType": "Тип бизнеса",
+                "registrationNumber": "Регистрационный номер",
+                "website": "Веб-сайт",
+                "workingHours": "Часы работы"
+            }
+        },
+        "location": {
+            "title": "Локации",
+            "add": "Добавить локацию",
+            "edit": "Редактировать локацию",
+            "delete": "Удалить локацию",
+            "mainLocation": "Основная локация",
+            "fields": {
+                "address": "Адрес",
+                "city": "Город",
+                "district": "Район",
+                "postalCode": "Почтовый индекс",
+                "phone": "Телефон",
+                "workingHours": "Часы работы"
+            },
+            "messages": {
+                "addSuccess": "Локация успешно добавлена",
+                "updateSuccess": "Локация успешно обновлена",
+                "deleteSuccess": "Локация успешно удалена",
+                "deleteError": "Невозможно удалить единственную локацию"
+            }
+        },
+        "statistics": {
+            "title": "Статистика бизнеса",
+            "totalListings": "Всего объявлений",
+            "activeListings": "Активные объявления",
+            "totalReservations": "Всего бронирований",
+            "averageRating": "Средний рейтинг",
+            "periodical": {
+                "daily": "За день",
+                "weekly": "За неделю",
+                "monthly": "За месяц"
+            }
+        }
+    },
+    "foodListing": {
+        "title": "Объявления о еде",
+        "create": "Создать объявление",
+        "edit": "Редактировать объявление",
+        "delete": "Удалить объявление",
+        "fields": {
+            "title": "Название",
+            "description": "Описание",
+            "price": "Цена",
+            "originalPrice": "Изначальная цена",
+            "quantity": "Количество",
+            "unit": "Единица измерения",
+            "expiryDate": "Срок годности",
+            "pickupTime": {
+                "start": "Начало времени самовывоза",
+                "end": "Конец времени самовывоза"
+            },
+            "location": "Место самовывоза",
+            "categories": "Категории",
+            "isHalal": "Халяльная еда",
+            "preparationTime": "Время приготовления",
+            "storageInstructions": "Инструкции по хранению"
+        },
+        "status": {
+            "available": "Доступно",
+            "unavailable": "Недоступно",
+            "sold": "Продано"
+        },
+        "messages": {
+            "createSuccess": "Объявление успешно создано",
+            "updateSuccess": "Объявление успешно обновлено",
+            "deleteSuccess": "Объявление успешно удалено",
+            "deleteError": "Невозможно удалить объявление с активными бронированиями"
+        }
+    },
+    "reservation": {
+        "title": "Бронирования",
+        "create": "Создать бронирование",
+        "details": "Детали бронирования",
+        "status": {
+            "pending": "В ожидании",
+            "confirmed": "Подтверждено",
+            "completed": "Завершено",
+            "cancelled": "Отменено"
+        },
+        "payment": {
+            "title": "Оплата",
+            "status": {
+                "pending": "Ожидает оплаты",
+                "completed": "Оплачено",
+                "failed": "Ошибка оплаты"
+            },
+            "amount": "Сумма к оплате",
+            "method": "Способ оплаты"
+        },
+        "pickup": {
+            "title": "Детали самовывоза",
+            "qrCode": "Показать QR-код",
+            "confirmationCode": "Код подтверждения",
+            "verifyTitle": "Подтверждение получения",
+            "reminder": "Ваше время самовывоза: {time}",
+            "confirmed": "Получение подтверждено в {time}",
+            "instructions": "Покажите этот QR-код или код подтверждения при получении"
+        },
+        "messages": {
+            "createSuccess": "Бронирование успешно создано",
+            "updateSuccess": "Бронирование успешно обновлено",
+            "cancelSuccess": "Бронирование отменено",
+            "paymentSuccess": "Оплата успешно обработана",
+            "pickupSuccess": "Получение подтверждено",
+            "invalidCode": "Неверный код подтверждения"
+        }
+    },
+    "customer": {
+        "profile": {
+            "title": "Профиль клиента",
+            "edit": "Редактировать профиль",
+            "fields": {
+                "firstName": "Имя",
+                "lastName": "Фамилия",
+                "email": "Email",
+                "phone": "Телефон",
+                "address": "Адрес",
+                "birthDate": "Дата рождения",
+                "language": "Предпочитаемый язык"
+            }
+        },
+        "savedListings": {
+            "title": "Сохраненные объявления",
+            "empty": "Нет сохраненных объявлений",
+            "messages": {
+                "saveSuccess": "Объявление успешно сохранено",
+                "removeSuccess": "Объявление удалено из сохраненных"
+            }
+        }
+    },
+    "review": {
+        "title": "Отзывы",
+        "write": "Написать отзыв",
+        "edit": "Редактировать отзыв",
+        "fields": {
+            "rating": "Оценка",
+            "comment": "Комментарий",
+            "images": "Загрузить изображения"
+        },
+        "messages": {
+            "createSuccess": "Отзыв успешно отправлен",
+            "updateSuccess": "Отзыв успешно обновлен",
+            "deleteSuccess": "Отзыв успешно удален"
+        }
+    },
+    "notifications": {
+        "title": "Уведомления",
+        "markAsRead": "Отметить как прочитанное",
+        "markAllAsRead": "Отметить все как прочитанные",
+        "empty": "Нет уведомлений",
+        "preferences": {
+            "title": "Настройки уведомлений",
+            "email": "Email уведомления",
+            "push": "Push-уведомления",
+            "sms": "SMS уведомления"
+        },
+        "types": {
+            "reservationUpdate": "Обновления бронирований",
+            "paymentUpdate": "Обновления платежей",
+            "listingUpdate": "Обновления объявлений",
+            "reviewReceived": "Новые отзывы",
+            "priceDrop": "Снижение цен",
+            "pickupReminder": "Напоминания о самовывозе"
+        }
+    },
+    "errors": {
+        "validation": {
+            "required": "Поле {field} обязательно для заполнения",
+            "email": "Неверный формат email",
+            "phone": "Неверный формат номера телефона",
+            "minLength": "Поле {field} должно содержать минимум {min} символов",
+            "maxLength": "Поле {field} должно содержать максимум {max} символов",
+            "passwordMatch": "Пароли не совпадают",
+            "invalidDate": "Неверный формат даты",
+            "futureDate": "Дата должна быть в будущем",
+            "positiveNumber": "Должно быть положительным числом"
+        },
+        "auth": {
+            "invalidCredentials": "Неверный email или пароль",
+            "accountLocked": "Аккаунт заблокирован",
+            "sessionExpired": "Сессия истекла, войдите снова",
+            "unauthorized": "Для продолжения необходимо войти в систему"
+        },
+        "server": {
+            "internal": "Произошла внутренняя ошибка сервера",
+            "maintenance": "Сервис временно недоступен",
+            "timeout": "Превышено время ожидания запроса"
+        }
+    }
+}

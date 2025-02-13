@@ -1,0 +1,302 @@
+{
+    "common": {
+        "success": "Success",
+        "error": "Error",
+        "notFound": "Not found",
+        "unauthorized": "Unauthorized access",
+        "forbidden": "Access forbidden",
+        "validationError": "Validation error",
+        "serverError": "Server error occurred",
+        "edit": "Edit",
+        "delete": "Delete",
+        "save": "Save",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "loading": "Loading...",
+        "noResults": "No results found",
+        "search": "Search",
+        "filter": "Filter",
+        "sort": "Sort",
+        "page": "Page {number}",
+        "showing": "Showing {start} to {end} of {total} entries",
+        "currency": {
+            "uzs": "UZS",
+            "format": "{amount} UZS"
+        },
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive",
+            "pending": "Pending",
+            "completed": "Completed",
+            "cancelled": "Cancelled"
+        }
+    },
+    "auth": {
+        "login": {
+            "title": "Login",
+            "success": "Successfully logged in",
+            "error": "Invalid credentials",
+            "emailPlaceholder": "Enter your email",
+            "passwordPlaceholder": "Enter your password",
+            "rememberMe": "Remember me",
+            "forgotPassword": "Forgot password?",
+            "googleLogin": "Login with Google",
+            "appleLogin": "Login with Apple"
+        },
+        "register": {
+            "title": "Register",
+            "success": "Registration successful",
+            "error": "Registration failed",
+            "emailExists": "Email already exists",
+            "customerTitle": "Register as Customer",
+            "businessTitle": "Register as Business",
+            "fields": {
+                "email": "Email",
+                "password": "Password",
+                "confirmPassword": "Confirm Password",
+                "phone": "Phone Number",
+                "firstName": "First Name",
+                "lastName": "Last Name",
+                "companyName": "Company Name",
+                "legalName": "Legal Name",
+                "taxNumber": "Tax Number"
+            }
+        },
+        "forgotPassword": {
+            "title": "Forgot Password",
+            "success": "Password reset link sent to your email",
+            "error": "Failed to send reset link",
+            "emailSent": "Check your email for reset instructions"
+        },
+        "resetPassword": {
+            "title": "Reset Password",
+            "success": "Password successfully reset",
+            "error": "Failed to reset password",
+            "invalidToken": "Invalid or expired reset token"
+        },
+        "verification": {
+            "email": {
+                "title": "Email Verification",
+                "success": "Email successfully verified",
+                "error": "Email verification failed",
+                "pending": "Please verify your email"
+            },
+            "phone": {
+                "title": "Phone Verification",
+                "success": "Phone number successfully verified",
+                "error": "Phone verification failed",
+                "codeSent": "Verification code sent to your phone",
+                "enterCode": "Enter verification code"
+            }
+        }
+    },
+    "business": {
+        "profile": {
+            "title": "Business Profile",
+            "edit": "Edit Profile",
+            "verification": {
+                "pending": "Verification pending",
+                "verified": "Business verified",
+                "rejected": "Verification rejected"
+            },
+            "fields": {
+                "companyName": "Company Name",
+                "legalName": "Legal Name",
+                "taxNumber": "Tax Number",
+                "businessLicense": "Business License",
+                "businessType": "Business Type",
+                "registrationNumber": "Registration Number",
+                "website": "Website",
+                "workingHours": "Working Hours"
+            }
+        },
+        "location": {
+            "title": "Locations",
+            "add": "Add Location",
+            "edit": "Edit Location",
+            "delete": "Delete Location",
+            "mainLocation": "Main Location",
+            "fields": {
+                "address": "Address",
+                "city": "City",
+                "district": "District",
+                "postalCode": "Postal Code",
+                "phone": "Phone",
+                "workingHours": "Working Hours"
+            },
+            "messages": {
+                "addSuccess": "Location added successfully",
+                "updateSuccess": "Location updated successfully",
+                "deleteSuccess": "Location deleted successfully",
+                "deleteError": "Cannot delete the only location"
+            }
+        },
+        "statistics": {
+            "title": "Business Statistics",
+            "totalListings": "Total Listings",
+            "activeListings": "Active Listings",
+            "totalReservations": "Total Reservations",
+            "averageRating": "Average Rating",
+            "periodical": {
+                "daily": "Daily",
+                "weekly": "Weekly",
+                "monthly": "Monthly"
+            }
+        }
+    },
+    "foodListing": {
+        "title": "Food Listings",
+        "create": "Create Listing",
+        "edit": "Edit Listing",
+        "delete": "Delete Listing",
+        "fields": {
+            "title": "Title",
+            "description": "Description",
+            "price": "Price",
+            "originalPrice": "Original Price",
+            "quantity": "Quantity",
+            "unit": "Unit",
+            "expiryDate": "Expiry Date",
+            "pickupTime": {
+                "start": "Pickup Start Time",
+                "end": "Pickup End Time"
+            },
+            "location": "Pickup Location",
+            "categories": "Categories",
+            "isHalal": "Halal Food",
+            "preparationTime": "Preparation Time",
+            "storageInstructions": "Storage Instructions"
+        },
+        "status": {
+            "available": "Available",
+            "unavailable": "Unavailable",
+            "sold": "Sold Out"
+        },
+        "messages": {
+            "createSuccess": "Listing created successfully",
+            "updateSuccess": "Listing updated successfully",
+            "deleteSuccess": "Listing deleted successfully",
+            "deleteError": "Cannot delete listing with active reservations"
+        }
+    },
+    "reservation": {
+        "title": "Reservations",
+        "create": "Make Reservation",
+        "details": "Reservation Details",
+        "status": {
+            "pending": "Pending",
+            "confirmed": "Confirmed",
+            "completed": "Completed",
+            "cancelled": "Cancelled"
+        },
+        "payment": {
+            "title": "Payment",
+            "status": {
+                "pending": "Payment Pending",
+                "completed": "Payment Completed",
+                "failed": "Payment Failed"
+            },
+            "amount": "Amount to Pay",
+            "method": "Payment Method"
+        },
+        "pickup": {
+            "title": "Pickup Details",
+            "qrCode": "Show QR Code",
+            "confirmationCode": "Confirmation Code",
+            "verifyTitle": "Verify Pickup",
+            "reminder": "Your pickup is scheduled for {time}",
+            "confirmed": "Pickup confirmed at {time}",
+            "instructions": "Show this QR code or confirmation code at pickup"
+        },
+        "messages": {
+            "createSuccess": "Reservation created successfully",
+            "updateSuccess": "Reservation updated successfully",
+            "cancelSuccess": "Reservation cancelled successfully",
+            "paymentSuccess": "Payment processed successfully",
+            "pickupSuccess": "Pickup verified successfully",
+            "invalidCode": "Invalid confirmation code"
+        }
+    },
+    "customer": {
+        "profile": {
+            "title": "Customer Profile",
+            "edit": "Edit Profile",
+            "fields": {
+                "firstName": "First Name",
+                "lastName": "Last Name",
+                "email": "Email",
+                "phone": "Phone",
+                "address": "Address",
+                "birthDate": "Birth Date",
+                "language": "Preferred Language"
+            }
+        },
+        "savedListings": {
+            "title": "Saved Listings",
+            "empty": "No saved listings",
+            "messages": {
+                "saveSuccess": "Listing saved successfully",
+                "removeSuccess": "Listing removed from saved items"
+            }
+        }
+    },
+    "review": {
+        "title": "Reviews",
+        "write": "Write a Review",
+        "edit": "Edit Review",
+        "fields": {
+            "rating": "Rating",
+            "comment": "Comment",
+            "images": "Upload Images"
+        },
+        "messages": {
+            "createSuccess": "Review submitted successfully",
+            "updateSuccess": "Review updated successfully",
+            "deleteSuccess": "Review deleted successfully"
+        }
+    },
+    "notifications": {
+        "title": "Notifications",
+        "markAsRead": "Mark as Read",
+        "markAllAsRead": "Mark All as Read",
+        "empty": "No notifications",
+        "preferences": {
+            "title": "Notification Preferences",
+            "email": "Email Notifications",
+            "push": "Push Notifications",
+            "sms": "SMS Notifications"
+        },
+        "types": {
+            "reservationUpdate": "Reservation Updates",
+            "paymentUpdate": "Payment Updates",
+            "listingUpdate": "Listing Updates",
+            "reviewReceived": "New Reviews",
+            "priceDrop": "Price Drops",
+            "pickupReminder": "Pickup Reminders"
+        }
+    },
+    "errors": {
+        "validation": {
+            "required": "{field} is required",
+            "email": "Invalid email format",
+            "phone": "Invalid phone number format",
+            "minLength": "{field} must be at least {min} characters",
+            "maxLength": "{field} cannot exceed {max} characters",
+            "passwordMatch": "Passwords do not match",
+            "invalidDate": "Invalid date format",
+            "futureDate": "Date must be in the future",
+            "positiveNumber": "Must be a positive number"
+        },
+        "auth": {
+            "invalidCredentials": "Invalid email or password",
+            "accountLocked": "Account is locked",
+            "sessionExpired": "Session expired, please login again",
+            "unauthorized": "Please login to continue"
+        },
+        "server": {
+            "internal": "Internal server error occurred",
+            "maintenance": "Service temporarily unavailable",
+            "timeout": "Request timeout"
+        }
+    }
+}

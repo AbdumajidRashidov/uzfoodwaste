@@ -1,0 +1,302 @@
+{
+    "common": {
+        "success": "Muvaffaqiyatli",
+        "error": "Xato",
+        "notFound": "Topilmadi",
+        "unauthorized": "Ruxsat berilmagan",
+        "forbidden": "Kirish taqiqlangan",
+        "validationError": "Ma'lumotlar xato",
+        "serverError": "Server xatosi yuz berdi",
+        "edit": "Tahrirlash",
+        "delete": "O'chirish",
+        "save": "Saqlash",
+        "cancel": "Bekor qilish",
+        "confirm": "Tasdiqlash",
+        "loading": "Yuklanmoqda...",
+        "noResults": "Natija topilmadi",
+        "search": "Qidirish",
+        "filter": "Filtrlash",
+        "sort": "Saralash",
+        "page": "{number}-sahifa",
+        "showing": "Jami {total} tadan {start}-{end} ko'rsatilmoqda",
+        "currency": {
+            "uzs": "so'm",
+            "format": "{amount} so'm"
+        },
+        "status": {
+            "active": "Faol",
+            "inactive": "Faol emas",
+            "pending": "Kutilmoqda",
+            "completed": "Tugallangan",
+            "cancelled": "Bekor qilingan"
+        }
+    },
+    "auth": {
+        "login": {
+            "title": "Tizimga kirish",
+            "success": "Tizimga muvaffaqiyatli kirdingiz",
+            "error": "Login yoki parol noto'g'ri",
+            "emailPlaceholder": "Emailingizni kiriting",
+            "passwordPlaceholder": "Parolingizni kiriting",
+            "rememberMe": "Meni eslab qol",
+            "forgotPassword": "Parolni unutdingizmi?",
+            "googleLogin": "Google orqali kirish",
+            "appleLogin": "Apple orqali kirish"
+        },
+        "register": {
+            "title": "Ro'yxatdan o'tish",
+            "success": "Ro'yxatdan o'tish muvaffaqiyatli yakunlandi",
+            "error": "Ro'yxatdan o'tib bo'lmadi",
+            "emailExists": "Bunday email allaqachon mavjud",
+            "customerTitle": "Xaridor sifatida ro'yxatdan o'tish",
+            "businessTitle": "Biznes sifatida ro'yxatdan o'tish",
+            "fields": {
+                "email": "Email",
+                "password": "Parol",
+                "confirmPassword": "Parolni tasdiqlang",
+                "phone": "Telefon raqami",
+                "firstName": "Ism",
+                "lastName": "Familiya",
+                "companyName": "Kompaniya nomi",
+                "legalName": "Yuridik nomi",
+                "taxNumber": "Soliq raqami"
+            }
+        },
+        "forgotPassword": {
+            "title": "Parolni tiklash",
+            "success": "Parolni tiklash yo'riqnomasi emailingizga yuborildi",
+            "error": "Parolni tiklash xabari yuborilmadi",
+            "emailSent": "Emailingizni tekshiring"
+        },
+        "resetPassword": {
+            "title": "Yangi parol o'rnatish",
+            "success": "Parolingiz muvaffaqiyatli o'zgartirildi",
+            "error": "Parolni o'zgartirib bo'lmadi",
+            "invalidToken": "Noto'g'ri yoki muddati o'tgan havola"
+        },
+        "verification": {
+            "email": {
+                "title": "Email tasdiqlash",
+                "success": "Email muvaffaqiyatli tasdiqlandi",
+                "error": "Emailni tasdiqlab bo'lmadi",
+                "pending": "Iltimos, emailingizni tasdiqlang"
+            },
+            "phone": {
+                "title": "Telefon raqamini tasdiqlash",
+                "success": "Telefon raqami muvaffaqiyatli tasdiqlandi",
+                "error": "Telefon raqamini tasdiqlab bo'lmadi",
+                "codeSent": "Tasdiqlash kodi telefoningizga yuborildi",
+                "enterCode": "Tasdiqlash kodini kiriting"
+            }
+        }
+    },
+    "business": {
+        "profile": {
+            "title": "Biznes profili",
+            "edit": "Profilni tahrirlash",
+            "verification": {
+                "pending": "Tasdiqlash kutilmoqda",
+                "verified": "Biznes tasdiqlangan",
+                "rejected": "Tasdiqlash rad etildi"
+            },
+            "fields": {
+                "companyName": "Kompaniya nomi",
+                "legalName": "Yuridik nomi",
+                "taxNumber": "Soliq raqami",
+                "businessLicense": "Biznes litsenziyasi",
+                "businessType": "Biznes turi",
+                "registrationNumber": "Ro'yxatdan o'tish raqami",
+                "website": "Veb-sayt",
+                "workingHours": "Ish vaqti"
+            }
+        },
+        "location": {
+            "title": "Manzillar",
+            "add": "Manzil qo'shish",
+            "edit": "Manzilni tahrirlash",
+            "delete": "Manzilni o'chirish",
+            "mainLocation": "Asosiy manzil",
+            "fields": {
+                "address": "Manzil",
+                "city": "Shahar",
+                "district": "Tuman",
+                "postalCode": "Pochta indeksi",
+                "phone": "Telefon",
+                "workingHours": "Ish vaqti"
+            },
+            "messages": {
+                "addSuccess": "Manzil muvaffaqiyatli qo'shildi",
+                "updateSuccess": "Manzil muvaffaqiyatli yangilandi",
+                "deleteSuccess": "Manzil muvaffaqiyatli o'chirildi",
+                "deleteError": "Yagona manzilni o'chirib bo'lmaydi"
+            }
+        },
+        "statistics": {
+            "title": "Biznes statistikasi",
+            "totalListings": "Jami e'lonlar",
+            "activeListings": "Faol e'lonlar",
+            "totalReservations": "Jami buyurtmalar",
+            "averageRating": "O'rtacha reyting",
+            "periodical": {
+                "daily": "Kunlik",
+                "weekly": "Haftalik",
+                "monthly": "Oylik"
+            }
+        }
+    },
+    "foodListing": {
+        "title": "Oziq-ovqat e'lonlari",
+        "create": "E'lon yaratish",
+        "edit": "E'lonni tahrirlash",
+        "delete": "E'lonni o'chirish",
+        "fields": {
+            "title": "Nomi",
+            "description": "Tavsif",
+            "price": "Narxi",
+            "originalPrice": "Asl narxi",
+            "quantity": "Miqdori",
+            "unit": "O'lchov birligi",
+            "expiryDate": "Yaroqlilik muddati",
+            "pickupTime": {
+                "start": "Olib ketish vaqti boshlanishi",
+                "end": "Olib ketish vaqti tugashi"
+            },
+            "location": "Olib ketish manzili",
+            "categories": "Kategoriyalar",
+            "isHalal": "Halol taom",
+            "preparationTime": "Tayyorlash vaqti",
+            "storageInstructions": "Saqlash bo'yicha ko'rsatmalar"
+        },
+        "status": {
+            "available": "Mavjud",
+            "unavailable": "Mavjud emas",
+            "sold": "Sotilgan"
+        },
+        "messages": {
+            "createSuccess": "E'lon muvaffaqiyatli yaratildi",
+            "updateSuccess": "E'lon muvaffaqiyatli yangilandi",
+            "deleteSuccess": "E'lon muvaffaqiyatli o'chirildi",
+            "deleteError": "Faol buyurtmali e'lonni o'chirib bo'lmaydi"
+        }
+    },
+    "reservation": {
+        "title": "Buyurtmalar",
+        "create": "Buyurtma berish",
+        "details": "Buyurtma tafsilotlari",
+        "status": {
+            "pending": "Kutilmoqda",
+            "confirmed": "Tasdiqlangan",
+            "completed": "Bajarilgan",
+            "cancelled": "Bekor qilingan"
+        },
+        "payment": {
+            "title": "To'lov",
+            "status": {
+                "pending": "To'lov kutilmoqda",
+                "completed": "To'lov amalga oshirildi",
+                "failed": "To'lov amalga oshmadi"
+            },
+            "amount": "To'lov miqdori",
+            "method": "To'lov usuli"
+        },
+        "pickup": {
+            "title": "Olib ketish ma'lumotlari",
+            "qrCode": "QR kodni ko'rsatish",
+            "confirmationCode": "Tasdiqlash kodi",
+            "verifyTitle": "Olib ketishni tasdiqlash",
+            "reminder": "Sizning olib ketish vaqtingiz: {time}",
+            "confirmed": "Olib ketish tasdiqlandi: {time}",
+            "instructions": "Olib ketishda ushbu QR kod yoki tasdiqlash kodini ko'rsating"
+        },
+        "messages": {
+            "createSuccess": "Buyurtma muvaffaqiyatli yaratildi",
+            "updateSuccess": "Buyurtma muvaffaqiyatli yangilandi",
+            "cancelSuccess": "Buyurtma bekor qilindi",
+            "paymentSuccess": "To'lov muvaffaqiyatli amalga oshirildi",
+            "pickupSuccess": "Olib ketish tasdiqlandi",
+            "invalidCode": "Noto'g'ri tasdiqlash kodi"
+        }
+    },
+    "customer": {
+        "profile": {
+            "title": "Mijoz profili",
+            "edit": "Profilni tahrirlash",
+            "fields": {
+                "firstName": "Ism",
+                "lastName": "Familiya",
+                "email": "Email",
+                "phone": "Telefon",
+                "address": "Manzil",
+                "birthDate": "Tug'ilgan sana",
+                "language": "Til"
+            }
+        },
+        "savedListings": {
+            "title": "Saqlangan e'lonlar",
+            "empty": "Saqlangan e'lonlar yo'q",
+            "messages": {
+                "saveSuccess": "E'lon muvaffaqiyatli saqlandi",
+                "removeSuccess": "E'lon saqlanganlarda olib tashlandi"
+            }
+        }
+    },
+    "review": {
+        "title": "Sharhlar",
+        "write": "Sharh yozish",
+        "edit": "Sharhni tahrirlash",
+        "fields": {
+            "rating": "Baholash",
+            "comment": "Sharh",
+            "images": "Rasmlar yuklash"
+        },
+        "messages": {
+            "createSuccess": "Sharh muvaffaqiyatli yuborildi",
+            "updateSuccess": "Sharh muvaffaqiyatli yangilandi",
+            "deleteSuccess": "Sharh muvaffaqiyatli o'chirildi"
+        }
+    },
+    "notifications": {
+        "title": "Bildirishnomalar",
+        "markAsRead": "O'qilgan deb belgilash",
+        "markAllAsRead": "Barchasini o'qilgan deb belgilash",
+        "empty": "Bildirishnomalar yo'q",
+        "preferences": {
+            "title": "Bildirishnoma sozlamalari",
+            "email": "Email xabarnomalar",
+            "push": "Push xabarnomalar",
+            "sms": "SMS xabarnomalar"
+        },
+        "types": {
+            "reservationUpdate": "Buyurtma yangilanishlari",
+            "paymentUpdate": "To'lov yangilanishlari",
+            "listingUpdate": "E'lon yangilanishlari",
+            "reviewReceived": "Yangi sharhlar",
+            "priceDrop": "Narx tushishi",
+            "pickupReminder": "Olib ketish eslatmalari"
+        }
+    },
+    "errors": {
+        "validation": {
+            "required": "{field} to'ldirilishi shart",
+            "email": "Email noto'g'ri formatda",
+            "phone": "Telefon raqami noto'g'ri formatda",
+            "minLength": "{field} kamida {min} ta belgidan iborat bo'lishi kerak",
+            "maxLength": "{field} ko'pi bilan {max} ta belgidan iborat bo'lishi mumkin",
+            "passwordMatch": "Parollar mos kelmadi",
+            "invalidDate": "Sana noto'g'ri formatda",
+            "futureDate": "Sana kelajakda bo'lishi kerak",
+            "positiveNumber": "Musbat son bo'lishi kerak"
+        },
+        "auth": {
+            "invalidCredentials": "Email yoki parol noto'g'ri",
+            "accountLocked": "Akkount bloklangan",
+            "sessionExpired": "Sessiya muddati tugadi, qayta kiring",
+            "unauthorized": "Davom etish uchun tizimga kiring"
+        },
+        "server": {
+            "internal": "Ichki server xatosi yuz berdi",
+            "maintenance": "Xizmat vaqtincha mavjud emas",
+            "timeout": "So'rov vaqti tugadi"
+        }
+    }
+}

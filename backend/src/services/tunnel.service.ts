@@ -58,7 +58,7 @@ export class TunnelService {
     console.log("\n=== Ngrok Tunnel Established ===");
     console.log("→ Public URL:", this.url);
     console.log("→ API Documentation:", `${this.url}/api-docs`);
-    console.log("→ Health Check:", `${this.url}/api/health`);
+    console.log("→ Health Check:", `${this.url}/health`);
     console.log("→ Local Inspection:", "http://localhost:4040");
     console.log("→ Share this URL with your team to access the API");
     console.log("===============================\n");
