@@ -11,6 +11,7 @@ import savedListingRoutes from "./saved-listing.routes";
 import listingCategoryRoutes from "./listing-category.routes";
 import notificationRoutes from "./notification.routes";
 import deviceRoutes from "./device.routes";
+import referralRoutes from "./referral.routes";
 
 const router = Router();
 
@@ -38,5 +39,6 @@ router.use(`${API_VERSION}/saved-listings`, savedListingRoutes);
 router.use(`${API_VERSION}/listing-categories`, listingCategoryRoutes);
 router.use(`${API_VERSION}/notifications`, notificationRoutes);
 router.use(`${API_VERSION}/devices`, deviceRoutes);
+router.use(`${API_VERSION}/referrals`, referralRoutes);
 
 export default router;
