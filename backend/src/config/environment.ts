@@ -52,8 +52,11 @@ export const config = {
     bucketName: process.env.GCP_BUCKET_NAME,
   },
   cors: {
-    allowedOrigins: process.env.CORS_ALLOWED_ORIGINS,
-    credentials: process.env.CORS_CREDENTIALS,
+    allowedOrigins: (
+      process.env.CORS_ALLOWED_ORIGINS ||
+      "http://localhost:3000,http://localhost:5173"
+    ).split(","),
+    credentials: process.env.CORS_CREDENTIALS === "true",
   },
   redis: {
     host: process.env.REDIS_HOST || "localhost",
