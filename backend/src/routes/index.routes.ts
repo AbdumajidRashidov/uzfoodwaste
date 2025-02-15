@@ -13,7 +13,11 @@ import notificationRoutes from "./notification.routes";
 import deviceRoutes from "./device.routes";
 import referralRoutes from "./referral.routes";
 
+import fileRoutes from "./file.routes";
+import { apiLimiter } from "../middlewares/rate-limit.middleware";
+
 const router = Router();
+router.use(apiLimiter);
 
 // Health check route
 router.get("/health", (req, res) => {
@@ -40,5 +44,6 @@ router.use(`${API_VERSION}/listing-categories`, listingCategoryRoutes);
 router.use(`${API_VERSION}/notifications`, notificationRoutes);
 router.use(`${API_VERSION}/devices`, deviceRoutes);
 router.use(`${API_VERSION}/referrals`, referralRoutes);
+router.use(`${API_VERSION}/files`, fileRoutes);
 
 export default router;

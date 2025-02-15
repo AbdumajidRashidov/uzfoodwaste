@@ -23,7 +23,7 @@ export const config = {
   },
   email: {
     host: process.env.EMAIL_HOST,
-    port: parseInt(process.env.EMAIL_PORT || "578"),
+    port: Number(process.env.EMAIL_PORT || "578"),
     secure: process.env.EMAIL_PORT === "465",
     user: process.env.EMAIL_USER,
     password: process.env.EMAIL_PASSWORD,
@@ -44,5 +44,20 @@ export const config = {
     authToken: process.env.NGROK_AUTH_TOKEN,
     region: process.env.NGROK_REGION || "us",
     enabled: process.env.ENABLE_TUNNEL === "true",
+  },
+  gcp: {
+    projectId: process.env.GCP_PROJECT_ID,
+    clientEmail: process.env.GCP_CLIENT_EMAIL,
+    privateKey: process.env.GCP_PRIVATE_KEY || "",
+    bucketName: process.env.GCP_BUCKET_NAME,
+  },
+  cors: {
+    allowedOrigins: process.env.CORS_ALLOWED_ORIGINS,
+    credentials: process.env.CORS_CREDENTIALS,
+  },
+  redis: {
+    host: process.env.REDIS_HOST || "localhost",
+    port: Number(process.env.REDIS_PORT || "6379"),
+    password: process.env.REDIS_PASSWORD,
   },
 };
