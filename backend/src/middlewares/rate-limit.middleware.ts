@@ -5,11 +5,12 @@ import Redis from "ioredis";
 import { config } from "../config/environment";
 
 // Redis client for rate limiting
-const redisClient = new Redis({
-  host: config.redis.host,
-  port: config.redis.port,
-  password: config.redis.password,
-});
+// const redisClient = new Redis({
+//   host: config.redis.host,
+//   port: config.redis.port,
+//   password: config.redis.password,
+// });
+const redisClient = new Redis(config.redis.url || "");
 
 // General API rate limit
 export const apiLimiter = rateLimit({
