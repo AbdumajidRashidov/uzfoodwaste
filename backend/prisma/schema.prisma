@@ -1,0 +1,359 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                     String    @id @default(uuid())
+  email                  String    @unique
+  password               String
+  phone                  String
+  role                   String // CUSTOMER or BUSINESS
+  created_at             DateTime  @default(now())
+  updated_at             DateTime  @updatedAt
+  is_verified            Boolean   @default(false)
+  language_preference    String    @default("uz")
+  password_reset_token   String?
+  password_reset_expires DateTime?
+  phone_verified         Boolean   @default(false)
+
+  // Relations
+  customer                 Customer?
+  business                 Business?
+  devices                  UserDevice[]
+  sms_logs                 SmsNotificationLog[]
+  notifications            Notification[]
+  notification_preferences UserNotificationPreferences?
+  referral_codes           ReferralCode[]
+  referred_users           ReferralUse[]                @relation("ReferrerUser")
+  referred_by              ReferralUse[]                @relation("ReferredUser")
+  points                   UserPoints?
+}
+
+model Customer {
+  id              String    @id @default(uuid())
+  user_id         String    @unique
+  first_name      String
+  last_name       String
+  address         String?
+  birth_date      DateTime?
+  profile_picture String?
+
+  // Relations
+  user           User           @relation(fields: [user_id], references: [id])
+  saved_listings SavedListing[]
+  reservations   Reservation[]
+  reviews        Review[]
+}
+
+model Business {
+  id                     String  @id @default(uuid())
+  user_id                String  @unique
+  company_name           String  @unique
+  legal_name             String
+  tax_number             String  @unique
+  business_license       String
+  business_type          String
+  registration_number    String
+  is_verified            Boolean @default(false)
+  verification_documents String
+  logo                   String?
+  website                String?
+  working_hours          String
+
+  // Relations
+  user          User               @relation(fields: [user_id], references: [id])
+  locations     BusinessLocation[]
+  food_listings FoodListing[]
+  reviews       Review[]
+}
+
+model BusinessLocation {
+  id               String  @id @default(uuid())
+  business_id      String
+  address          String
+  latitude         Decimal @db.Decimal(10, 8)
+  longitude        Decimal @db.Decimal(11, 8)
+  city             String
+  district         String
+  postal_code      String
+  is_main_location Boolean @default(false)
+  phone            String
+  working_hours    String
+
+  // Relations
+  business      Business      @relation(fields: [business_id], references: [id])
+  food_listings FoodListing[]
+}
+
+model FoodListing {
+  id                   String   @id @default(uuid())
+  business_id          String
+  location_id          String
+  title                String
+  description          String
+  price                Decimal  @db.Decimal(10, 2)
+  original_price       Decimal  @db.Decimal(10, 2)
+  quantity             Int
+  unit                 String
+  expiry_date          DateTime
+  pickup_start         DateTime
+  pickup_end           DateTime
+  status               String   @default("AVAILABLE")
+  images               String[]
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+  is_halal             Boolean  @default(false)
+  preparation_time     String?
+  storage_instructions String?
+
+  // Relations
+  business       Business          @relation(fields: [business_id], references: [id])
+  location       BusinessLocation  @relation(fields: [location_id], references: [id])
+  saved_listings SavedListing[]
+  reservations   Reservation[]
+  reviews        Review[]
+  categories     ListingCategory[]
+
+  @@index([business_id])
+  @@index([location_id])
+  @@index([status])
+}
+
+model SavedListing {
+  id                   String   @id @default(uuid())
+  customer_id          String
+  listing_id           String
+  saved_at             DateTime @default(now())
+  notes                String?
+  notification_enabled Boolean  @default(true)
+
+  // Relations
+  customer Customer    @relation(fields: [customer_id], references: [id])
+  listing  FoodListing @relation(fields: [listing_id], references: [id])
+
+  @@unique([customer_id, listing_id])
+  @@index([customer_id])
+  @@index([listing_id])
+}
+
+model Reservation {
+  id                  String    @id @default(uuid())
+  customer_id         String
+  listing_id          String
+  status              String    @default("PENDING") // PENDING, CONFIRMED, COMPLETED, CANCELLED
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  pickup_time         DateTime
+  cancellation_reason String?
+  confirmation_code   String? // New field for QR code verification
+  pickup_confirmed_at DateTime? // New field to track actual pickup time
+
+  // Relations remain the same
+  customer             Customer             @relation(fields: [customer_id], references: [id])
+  listing              FoodListing          @relation(fields: [listing_id], references: [id])
+  payment_transactions PaymentTransaction[]
+  review               Review?
+
+  @@index([customer_id])
+  @@index([listing_id])
+  @@index([status])
+}
+
+model Review {
+  id             String   @id @default(uuid())
+  customer_id    String
+  business_id    String
+  listing_id     String
+  reservation_id String   @unique
+  rating         Int
+  comment        String
+  created_at     DateTime @default(now())
+  images         String[]
+
+  // Relations
+  customer    Customer    @relation(fields: [customer_id], references: [id])
+  business    Business    @relation(fields: [business_id], references: [id])
+  listing     FoodListing @relation(fields: [listing_id], references: [id])
+  reservation Reservation @relation(fields: [reservation_id], references: [id])
+
+  @@index([customer_id])
+  @@index([business_id])
+  @@index([listing_id])
+}
+
+model Category {
+  id          String @id @default(uuid())
+  name        String @unique
+  description String
+  icon        String
+
+  // Relations
+  listings ListingCategory[]
+}
+
+model ListingCategory {
+  listing_id  String
+  category_id String
+
+  // Relations
+  listing  FoodListing @relation(fields: [listing_id], references: [id])
+  category Category    @relation(fields: [category_id], references: [id])
+
+  @@id([listing_id, category_id])
+  @@index([listing_id])
+  @@index([category_id])
+}
+
+model PaymentTransaction {
+  id             String   @id @default(uuid())
+  reservation_id String
+  amount         Decimal  @db.Decimal(10, 2)
+  status         String // PENDING, COMPLETED, FAILED
+  payment_method String
+  transaction_id String   @unique
+  created_at     DateTime @default(now())
+  currency       String   @default("UZS")
+
+  // Relations
+  reservation Reservation @relation(fields: [reservation_id], references: [id])
+
+  @@index([reservation_id])
+  @@index([status])
+  @@index([payment_method])
+  @@index([transaction_id])
+}
+
+model UserDevice {
+  id           String   @id @default(uuid())
+  user_id      String
+  fcm_token    String?  @unique
+  device_type  String // 'android' | 'ios' | 'web'
+  device_name  String?
+  last_used_at DateTime @default(now())
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@index([fcm_token])
+}
+
+model SmsNotificationLog {
+  id                String   @id @default(uuid())
+  user_id           String
+  message           String
+  twilio_message_id String   @unique
+  status            String
+  created_at        DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@index([twilio_message_id])
+}
+
+enum NotificationType {
+  RESERVATION_UPDATE
+  PAYMENT_UPDATE
+  LISTING_UPDATE
+  REVIEW_RECEIVED
+  PRICE_DROP
+  PICKUP_REMINDER
+}
+
+model Notification {
+  id             String           @id @default(uuid())
+  user_id        String
+  type           NotificationType
+  title          String
+  message        String
+  is_read        Boolean          @default(false)
+  reference_id   String? // ID of related entity (reservation, listing, etc.)
+  reference_type String? // Type of related entity
+  created_at     DateTime         @default(now())
+  updated_at     DateTime         @updatedAt
+
+  // Relations
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@index([type])
+  @@index([is_read])
+}
+
+model UserNotificationPreferences {
+  id                  String             @id @default(uuid())
+  user_id             String             @unique
+  email_notifications Boolean            @default(true)
+  push_notifications  Boolean            @default(false)
+  sms_notifications   Boolean            @default(false)
+  notification_types  NotificationType[] @default([])
+  created_at          DateTime           @default(now())
+  updated_at          DateTime           @updatedAt
+
+  // Relations
+  user User @relation(fields: [user_id], references: [id])
+}
+
+model ReferralCode {
+  id            String    @id @default(uuid())
+  user_id       String
+  code          String    @unique
+  usage_limit   Int       @default(10)
+  times_used    Int       @default(0)
+  reward_points Int       @default(100)
+  expires_at    DateTime?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  // Relations
+  user          User          @relation(fields: [user_id], references: [id])
+  referral_uses ReferralUse[]
+
+  @@index([code])
+  @@index([user_id])
+}
+
+model ReferralUse {
+  id               String   @id @default(uuid())
+  referral_code_id String
+  referred_user_id String
+  referrer_user_id String
+  points_awarded   Int
+  created_at       DateTime @default(now())
+
+  // Relations
+  referral_code ReferralCode @relation(fields: [referral_code_id], references: [id])
+  referred_user User         @relation("ReferredUser", fields: [referred_user_id], references: [id])
+  referrer_user User         @relation("ReferrerUser", fields: [referrer_user_id], references: [id])
+
+  @@unique([referred_user_id])
+  @@index([referral_code_id])
+  @@index([referrer_user_id])
+}
+
+model UserPoints {
+  id             String   @id @default(uuid())
+  user_id        String   @unique
+  points_balance Int      @default(0)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [user_id], references: [id])
+}

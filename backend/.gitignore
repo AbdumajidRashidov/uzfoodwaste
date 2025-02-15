@@ -4,5 +4,4 @@ build/
 *.log
 .DS_Store
 db
-prisma
 firebase.json
