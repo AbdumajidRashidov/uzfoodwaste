@@ -3,58 +3,114 @@ import rateLimit from "express-rate-limit";
 import RedisStore from "rate-limit-redis";
 import Redis from "ioredis";
 import { config } from "../config/environment";
+import { RedisReply } from "rate-limit-redis/dist/index";
 
-// Redis client for rate limiting
-// const redisClient = new Redis({
-//   host: config.redis.host,
-//   port: config.redis.port,
-//   password: config.redis.password,
-// });
-const redisClient = new Redis(config.redis.url || "");
+// Create a Redis client with better error handling
+const createRedisClient = () => {
+  try {
+    if (!config.redis?.url) {
+      console.log("No Redis URL provided, using memory store");
+      return null;
+    }
 
-// General API rate limit
-export const apiLimiter = rateLimit({
-  store: new RedisStore({
-    sendCommand: (...args: string[]) => Object(redisClient).call(...args),
-  }),
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+    const client = new Redis(config.redis.url, {
+      enableOfflineQueue: true,
+      connectTimeout: 10000,
+      maxRetriesPerRequest: 3,
+      retryStrategy(times) {
+        if (times > 3) {
+          console.log("Redis connection failed, falling back to memory store");
+          return null;
+        }
+        return Math.min(times * 100, 3000);
+      },
+    });
+
+    client.on("error", (err) => {
+      console.warn("Redis error:", err);
+    });
+
+    client.on("connect", () => {
+      console.log("Connected to Redis successfully");
+    });
+
+    return client;
+  } catch (error) {
+    console.warn("Failed to initialize Redis:", error);
+    return null;
+  }
+};
+
+// Initialize Redis client
+const redisClient = createRedisClient();
+
+// Create a rate limiter with fallback to memory store
+const createLimiter = (options: {
+  windowMs: number;
+  max: number;
+  message: any;
+  prefix?: string;
+}) => {
+  const limiterConfig = {
+    windowMs: options.windowMs,
+    max: options.max,
+    message: options.message,
+    standardHeaders: true,
+    legacyHeaders: false,
+  };
+
+  // If Redis client is available and connected, use Redis store
+  if (redisClient?.status === "ready") {
+    return rateLimit({
+      ...limiterConfig,
+      store: new RedisStore({
+        // Fixed the TypeScript error with proper typing
+        sendCommand: async (
+          command: string,
+          ...args: string[]
+        ): Promise<RedisReply> => {
+          return Object(redisClient).call(command, ...args);
+        },
+        prefix: options.prefix || "rl:",
+      }),
+    });
+  }
+
+  // Fallback to memory store
+  console.log(
+    `Using memory store for rate limiting (${options.prefix || "default"})`
+  );
+  return rateLimit(limiterConfig);
+};
+
+// API rate limit
+export const apiLimiter = createLimiter({
+  windowMs: 1 * 60 * 1000, // 15 minutes
+  max: 10,
   message: {
     status: "error",
-    message: "Too many requests, please try again later.OK?",
+    message: "Too many requests, please try again later.",
   },
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 
-// Stricter rate limit for file operations
-export const fileUploadLimiter = rateLimit({
-  store: new RedisStore({
-    sendCommand: (...args: string[]) => Object(redisClient).call(...args),
-    prefix: "file-upload-limit:", // Separate prefix for file uploads
-  }),
+// File upload rate limit
+export const fileUploadLimiter = createLimiter({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 50, // Limit each IP to 50 file operations per hour
+  max: 50,
   message: {
     status: "error",
     message: "Too many file operations, please try again later.",
   },
-  standardHeaders: true,
-  legacyHeaders: false,
+  prefix: "file-upload-limit:",
 });
 
-// Specific limit for multiple file uploads
-export const multipleFileUploadLimiter = rateLimit({
-  store: new RedisStore({
-    sendCommand: (...args: string[]) => Object(redisClient).call(...args),
-    prefix: "multi-upload-limit:",
-  }),
+// Multiple file upload rate limit
+export const multipleFileUploadLimiter = createLimiter({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10, // Limit each IP to 10 multiple file uploads per hour
+  max: 10,
   message: {
     status: "error",
     message: "Too many bulk upload requests, please try again later.",
   },
-  standardHeaders: true,
-  legacyHeaders: false,
+  prefix: "multi-upload-limit:",
 });
