@@ -1,11 +1,14 @@
 // src/config/swagger.ts
 import swaggerJsdoc from "swagger-jsdoc";
 import { TunnelService } from "../services/tunnel.service";
+import { config } from "./environment";
 
 const getServerUrl = () => {
   const tunnelService = TunnelService.getInstance();
   const tunnelUrl = tunnelService.getUrl();
-
+  if (config.nodeEnv == "production") {
+    return config.cors.allowedOrigins[0];
+  }
   return tunnelUrl || "http://localhost:3000";
 };
 
@@ -20,7 +23,10 @@ const options = {
     servers: [
       {
         url: getServerUrl(),
-        description: "Development server",
+        description:
+          config.nodeEnv == "production"
+            ? "Production server"
+            : "Development server",
       },
     ],
     components: {
