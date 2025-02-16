@@ -1,3 +1,4 @@
+import { excludeSensitiveFields } from "./../utils/user.util";
 // src/services/auth.service.ts
 import * as crypto from "crypto";
 import bcrypt from "bcryptjs";
@@ -97,8 +98,8 @@ export class AuthService {
           },
         });
       }
-
-      return user;
+      const sanitizedUser = excludeSensitiveFields(user);
+      return sanitizedUser;
     });
 
     // Generate token
@@ -176,8 +177,8 @@ export class AuthService {
               profile_picture: payload.picture,
             },
           });
-
-          return user;
+          const sanitizedUser = excludeSensitiveFields(user);
+          return sanitizedUser;
         });
 
         user = result;

@@ -9,10 +9,112 @@
 
 /**
  * @swagger
+ * components:
+ *   schemas:
+ *     DetailedSystemStats:
+ *       type: object
+ *       properties:
+ *         overview:
+ *           type: object
+ *           properties:
+ *             total_users:
+ *               type: integer
+ *             total_businesses:
+ *               type: integer
+ *             total_customers:
+ *               type: integer
+ *             total_listings:
+ *               type: integer
+ *             total_reservations:
+ *               type: integer
+ *             average_rating:
+ *               type: number
+ *               format: float
+ *         user_stats:
+ *           type: object
+ *           properties:
+ *             by_role:
+ *               type: array
+ *               items:
+ *                 type: object
+ *             verification_rate:
+ *               type: number
+ *               format: float
+ *         business_stats:
+ *           type: object
+ *           properties:
+ *             verification_data:
+ *               type: array
+ *               items:
+ *                 type: object
+ *             verification_rate:
+ *               type: number
+ *               format: float
+ *
+ *     BusinessAnalytics:
+ *       type: object
+ *       properties:
+ *         business_info:
+ *           type: object
+ *           properties:
+ *             id:
+ *               type: string
+ *             company_name:
+ *               type: string
+ *             is_verified:
+ *               type: boolean
+ *             total_locations:
+ *               type: integer
+ *         performance_metrics:
+ *           type: object
+ *           properties:
+ *             total_listings:
+ *               type: integer
+ *             active_listings:
+ *               type: integer
+ *             total_reservations:
+ *               type: integer
+ *             completed_reservations:
+ *               type: integer
+ *             completion_rate:
+ *               type: number
+ *               format: float
+ *             average_rating:
+ *               type: number
+ *               format: float
+ *
+ *     UserAnalytics:
+ *       type: object
+ *       properties:
+ *         user_overview:
+ *           type: object
+ *           properties:
+ *             total_users:
+ *               type: integer
+ *             verified_users:
+ *               type: integer
+ *             customer_count:
+ *               type: integer
+ *             business_count:
+ *               type: integer
+ *         customer_metrics:
+ *           type: object
+ *           properties:
+ *             engagement:
+ *               type: array
+ *               items:
+ *                 type: object
+ *             average_reservations_per_customer:
+ *               type: number
+ *             average_reviews_per_customer:
+ *               type: number
+ */
+
+/**
+ * @swagger
  * /api/admin/create:
  *   post:
  *     summary: Create a new admin user
- *     description: Create another admin user (only existing admins can create new admins)
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
@@ -43,21 +145,17 @@
  *                 type: string
  *     responses:
  *       201:
- *         description: Admin created successfully
+ *         description: Admin user created successfully
  *       400:
  *         description: Invalid input data
  *       401:
  *         description: Unauthorized
  *       403:
- *         description: Forbidden - Not an admin
- */
-
-/**
- * @swagger
+ *         description: Not an admin
+ *
  * /api/admin/users:
  *   get:
- *     summary: Get all users
- *     description: Retrieve all users with filtering options (admin only)
+ *     summary: Get all users with filtering
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
@@ -66,11 +164,14 @@
  *         name: page
  *         schema:
  *           type: integer
+ *           minimum: 1
  *         description: Page number
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
+ *           minimum: 1
+ *           maximum: 100
  *         description: Items per page
  *       - in: query
  *         name: role
@@ -79,11 +180,6 @@
  *           enum: [ADMIN, CUSTOMER, BUSINESS]
  *         description: Filter by user role
  *       - in: query
- *         name: search
- *         schema:
- *           type: string
- *         description: Search term for email or phone
- *       - in: query
  *         name: isVerified
  *         schema:
  *           type: boolean
@@ -91,18 +187,24 @@
  *     responses:
  *       200:
  *         description: List of users retrieved successfully
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden - Not an admin
- */
-
-/**
- * @swagger
- * /api/admin/businesses/{businessId}/verify:
- *   patch:
- *     summary: Verify a business
- *     description: Mark a business as verified (admin only)
+ *
+ * /api/admin/stats/detailed:
+ *   get:
+ *     summary: Get detailed system statistics
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: System statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DetailedSystemStats'
+ *
+ * /api/admin/analytics/business/{businessId}:
+ *   get:
+ *     summary: Get business analytics
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
@@ -112,50 +214,126 @@
  *         required: true
  *         schema:
  *           type: string
- *         description: The business ID
  *     responses:
  *       200:
- *         description: Business verified successfully
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden - Not an admin
- *       404:
- *         description: Business not found
- */
-
-/**
- * @swagger
- * /api/admin/stats:
+ *         description: Business analytics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/BusinessAnalytics'
+ *
+ * /api/admin/analytics/users:
  *   get:
- *     summary: Get system statistics
- *     description: Retrieve system-wide statistics (admin only)
+ *     summary: Get user analytics
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Statistics retrieved successfully
+ *         description: User analytics retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 total_users:
- *                   type: integer
- *                 total_businesses:
- *                   type: integer
- *                 total_customers:
- *                   type: integer
- *                 total_listings:
- *                   type: integer
- *                 total_reservations:
- *                   type: integer
- *                 average_rating:
- *                   type: number
- *                   format: float
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Forbidden - Not an admin
+ *               $ref: '#/components/schemas/UserAnalytics'
+ *
+ * /api/admin/businesses/{businessId}/verify:
+ *   patch:
+ *     summary: Verify a business
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Business verified successfully
+ *
+ * /api/admin/businesses/verify-bulk:
+ *   post:
+ *     summary: Bulk verify businesses
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - business_ids
+ *               - is_verified
+ *             properties:
+ *               business_ids:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               is_verified:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Businesses updated successfully
+ *
+ * /api/admin/listings/manage:
+ *   post:
+ *     summary: Manage food listings
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - action
+ *               - listing_ids
+ *             properties:
+ *               action:
+ *                 type: string
+ *                 enum: [ACTIVATE, DEACTIVATE, DELETE]
+ *               listing_ids:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               business_id:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Listings managed successfully
+ *
+ * /api/admin/analytics/business/{businessId}/export:
+ *   get:
+ *     summary: Export business analytics
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: businessId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: format
+ *         schema:
+ *           type: string
+ *           enum: [JSON, CSV]
+ *         default: JSON
+ *     responses:
+ *       200:
+ *         description: Analytics exported successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/BusinessAnalytics'
+ *           text/csv:
+ *             schema:
+ *               type: string
+ *               format: binary
  */
