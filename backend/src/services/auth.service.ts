@@ -8,6 +8,7 @@ import { AppError } from "../middlewares/error.middleware";
 import { OAuth2Client } from "google-auth-library";
 import { PrismaClient } from "@prisma/client";
 import { EmailService } from "./email.service";
+import { TelegramService } from "./telegram.service";
 
 const emailService = new EmailService();
 
@@ -32,7 +33,7 @@ export class AuthService {
     email: string;
     password: string;
     phone: string;
-    role: "CUSTOMER" | "BUSINESS";
+    role: "CUSTOMER" | "BUSINESS" | "ADMIN";
     firstName?: string;
     lastName?: string;
     companyName?: string;
@@ -355,5 +356,19 @@ export class AuthService {
       status: "success",
       message: "Password successfully reset",
     };
+  }
+  async startTelegramVerification(userId: string) {
+    const telegramService = await TelegramService.getInstance();
+    const botLink = await telegramService.startVerification(userId);
+
+    return {
+      bot_link: botLink,
+      expires_in: 1800, // 30 minutes in seconds
+    };
+  }
+
+  async getTelegramVerificationStatus(userId: string) {
+    const telegramService = await TelegramService.getInstance();
+    return await telegramService.getVerificationStatus(userId);
   }
 }

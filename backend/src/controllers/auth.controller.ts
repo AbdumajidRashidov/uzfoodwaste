@@ -2,6 +2,7 @@
 import { Request, Response, NextFunction } from "express";
 import { AuthService } from "../services/auth.service";
 import { AppError } from "../middlewares/error.middleware";
+import { AuthRequest } from "../middlewares/auth.middleware";
 
 const authService = new AuthService();
 
@@ -84,6 +85,48 @@ export class AuthController {
       const result = await authService.resetPassword(token, password);
 
       res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async startTelegramVerification(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      if (!req.user?.id) {
+        throw new AppError("User ID not found", 400);
+      }
+
+      const result = await authService.startTelegramVerification(req.user.id);
+      res.status(200).json({
+        status: "success",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getTelegramVerificationStatus(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      if (!req.user?.id) {
+        throw new AppError("User ID not found", 400);
+      }
+
+      const status = await authService.getTelegramVerificationStatus(
+        req.user.id
+      );
+      res.status(200).json({
+        status: "success",
+        data: status,
+      });
     } catch (error) {
       next(error);
     }

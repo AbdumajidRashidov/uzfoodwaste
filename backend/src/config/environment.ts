@@ -64,4 +64,15 @@ export const config = {
     password: process.env.REDIS_PASSWORD,
     url: process.env.REDIS_URL || null,
   },
+  telegram: {
+    botToken: process.env.TELEGRAM_BOT_TOKEN,
+    webhookUrl: process.env.TELEGRAM_WEBHOOK_URL,
+  },
+  admin: {
+    email: process.env.ADMIN_EMAIL,
+    password: process.env.ADMIN_PASSWORD,
+    firstname: process.env.ADMIN_FIRSTNAME,
+    lastname: process.env.ADMIN_LASTNAME,
+    phone: process.env.ADMIN_PHONE,
+  },
 };

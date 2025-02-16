@@ -3,6 +3,7 @@ import { Router } from "express";
 import { AuthController } from "../controllers/auth.controller";
 import { validate } from "../middlewares/validation.middleware";
 import { body } from "express-validator";
+import { protect } from "../middlewares/auth.middleware";
 
 const router = Router();
 const authController = new AuthController();
@@ -20,8 +21,8 @@ router.post(
       .withMessage("Password must be at least 6 characters long"),
     body("phone").notEmpty().withMessage("Phone number is required"),
     body("role")
-      .isIn(["CUSTOMER", "BUSINESS"])
-      .withMessage("Role must be either CUSTOMER or BUSINESS"),
+      .isIn(["CUSTOMER", "BUSINESS", "ADMIN"])
+      .withMessage("Role must be either CUSTOMER, BUSINESS, or ADMIN"),
   ],
   validate,
   authController.register
@@ -54,6 +55,18 @@ router.post(
   ],
   validate,
   authController.resetPassword
+);
+
+router.post(
+  "/verify-telegram",
+  protect,
+  authController.startTelegramVerification
+);
+
+router.get(
+  "/verify-telegram/status",
+  protect,
+  authController.getTelegramVerificationStatus
 );
 
 export default router;

@@ -85,7 +85,7 @@ const createLimiter = (options: {
 
 // API rate limit
 export const apiLimiter = createLimiter({
-  windowMs: 1 * 60 * 1000, // 15 minutes
+  windowMs: 1 * 60 * 1000, // 1 minutes
   max: 10,
   message: {
     status: "error",
