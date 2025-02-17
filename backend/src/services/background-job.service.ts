@@ -13,6 +13,7 @@ export class BackgroundJobService {
     // Initialize Bull queue with Redis connection
     this.statusUpdateQueue = new Bull("pickup-status-updates", {
       redis: {
+        family: 0,
         host: config.redis.host,
         port: config.redis.port,
         password: config.redis.password,
