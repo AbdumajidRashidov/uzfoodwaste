@@ -59,9 +59,9 @@ export const config = {
     credentials: process.env.CORS_CREDENTIALS === "true",
   },
   redis: {
-    host: process.env.REDISHOST || "localhost",
-    port: Number(process.env.REDISPORT || "6379"),
-    password: process.env.REDISPASSWORD,
+    host: process.env.REDIS_HOST || "localhost",
+    port: Number(process.env.REDIS_PORT || "6379"),
+    password: process.env.REDIS_PASSWORD,
     url: process.env.REDIS_URL || null,
   },
   telegram: {
