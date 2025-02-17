@@ -1,6 +1,13 @@
 // src/services/food-listing.service.ts
 import { PrismaClient } from "@prisma/client";
 import { AppError } from "../middlewares/error.middleware";
+import {
+  calculateRemainingHours,
+  formatRemainingTime,
+  isPickupUrgent,
+  getPickupTimeStatus,
+  isPickupExpired,
+} from "../utils/time.util";
 
 const prisma = new PrismaClient();
 
@@ -195,7 +202,20 @@ export class FoodListingService {
       throw new AppError("Listing not found", 404);
     }
 
-    return listing;
+    if (listing) {
+      const remainingHours = calculateRemainingHours(listing.pickup_end);
+      const formattedTime = formatRemainingTime(remainingHours);
+      const isUrgent = isPickupUrgent(listing.pickup_end);
+      const status = getPickupTimeStatus(listing.pickup_end);
+
+      return {
+        ...listing,
+        remaining_pickup_hours: remainingHours,
+        pickup_status: status,
+        formatted_time: formattedTime,
+        is_urgent: isUrgent,
+      };
+    }
   }
 
   async getAllListings(query: {
@@ -209,6 +229,7 @@ export class FoodListingService {
     status?: string;
     businessId?: string;
     locationId?: string;
+    prioritizeUrgent?: boolean; // New parameter
   }) {
     const page = query.page || 1;
     const limit = query.limit || 10;
@@ -217,6 +238,7 @@ export class FoodListingService {
     // Build where clause
     const where: any = {
       status: query.status || "AVAILABLE",
+      pickup_status: { not: "expired" }, // Don't show expired listings by default
     };
 
     if (query.search) {
@@ -226,56 +248,69 @@ export class FoodListingService {
       ];
     }
 
-    if (query.category) {
-      where.categories = {
-        some: {
-          category_id: query.category,
+    // Add other existing filters...
+
+    // Define the order based on urgency prioritization
+    const orderBy: any[] = [];
+
+    if (query.prioritizeUrgent) {
+      // Order by pickup status priority (urgent -> warning -> normal)
+      orderBy.push({
+        pickup_status: {
+          sort: "asc",
+          // Custom sorting using Prisma's native database ordering
+          nulls: "last",
+          // This creates an ordering where 'urgent' comes first, then 'warning', then 'normal'
+          values: ["urgent", "warning", "normal"],
         },
-      };
+      });
     }
 
-    if (query.minPrice || query.maxPrice) {
-      where.price = {};
-      if (query.minPrice) where.price.gte = query.minPrice;
-      if (query.maxPrice) where.price.lte = query.maxPrice;
-    }
+    // Add secondary sorting by creation date
+    orderBy.push({ created_at: "desc" });
 
-    if (query.isHalal !== undefined) {
-      where.is_halal = query.isHalal;
-    }
-
-    if (query.businessId) {
-      where.business_id = query.businessId;
-    }
-
-    if (query.locationId) {
-      where.location_id = query.locationId;
-    }
-
-    // Get total count
-    const total = await prisma.foodListing.count({ where });
-
-    // Get listings
-    const listings = await prisma.foodListing.findMany({
-      where,
-      include: {
-        business: true,
-        location: true,
-        categories: {
-          include: {
-            category: true,
+    // Get listings with prioritization
+    const [total, listings] = await Promise.all([
+      prisma.foodListing.count({ where }),
+      prisma.foodListing.findMany({
+        where,
+        include: {
+          business: true,
+          location: true,
+          categories: {
+            include: {
+              category: true,
+            },
           },
         },
-      },
-      skip,
-      take: limit,
-      orderBy: {
-        created_at: "desc",
-      },
-    });
+        skip,
+        take: limit,
+        orderBy,
+      }),
+    ]);
+
+    // Update pickup statuses before returning
+    const updatedListings = await Promise.all(
+      listings.map(async (listing) => {
+        const status = getPickupTimeStatus(listing.pickup_end);
+
+        // Update pickup status if it has changed
+        if (status !== listing.pickup_status) {
+          await prisma.foodListing.update({
+            where: { id: listing.id },
+            data: { pickup_status: status },
+          });
+        }
+
+        return {
+          ...listing,
+          remaining_pickup_hours: calculateRemainingHours(listing.pickup_end),
+        };
+      })
+    );
 
     return {
-      listings,
+      listings: updatedListings,
       pagination: {
         total,
         page,
@@ -341,5 +376,24 @@ export class FoodListingService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  async updatePickupStatuses() {
+    const listings = await prisma.foodListing.findMany({
+      where: {
+        status: "AVAILABLE",
+        pickup_status: { not: "expired" },
+      },
+    });
+
+    for (const listing of listings) {
+      const status = getPickupTimeStatus(listing.pickup_end);
+      if (status !== listing.pickup_status) {
+        await prisma.foodListing.update({
+          where: { id: listing.id },
+          data: { pickup_status: status },
+        });
+      }
+    }
   }
 }

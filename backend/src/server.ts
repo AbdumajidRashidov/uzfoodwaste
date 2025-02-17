@@ -8,6 +8,7 @@ import { config } from "./config/environment";
 import { errorHandler } from "./middlewares/error.middleware";
 import indexRoutes from "./routes/index.routes";
 import { TunnelService } from "./services/tunnel.service";
+import { BackgroundJobService } from "./services/background-job.service";
 
 const app = express();
 
@@ -34,15 +35,23 @@ app.use("/", indexRoutes);
 app.use(errorHandler);
 
 const PORT = config.port;
+const backgroundJobService = new BackgroundJobService();
 
 const startServer = async () => {
   try {
-    app.listen(PORT, () => {
+    app.listen(PORT, async () => {
       console.log(`Server is running on port ${PORT}`);
       console.log(`Environment: ${config.nodeEnv}`);
       console.log(
         `CORS allowed origins: ${config.cors.allowedOrigins.join(", ")}`
       );
+      await backgroundJobService.startJobs();
+    });
+
+    // Handle graceful shutdown
+    process.on("SIGTERM", async () => {
+      await backgroundJobService.stopJobs();
+      process.exit(0);
     });
 
     // Start tunnel if enabled

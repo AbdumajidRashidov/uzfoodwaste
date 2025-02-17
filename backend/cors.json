@@ -1,0 +1,25 @@
+[
+    {
+        "origin": [
+            "http://localhost:3000",
+            "https://uzfoodwaste-production.up.railway.app/"
+        ],
+        "method": [
+            "GET",
+            "HEAD",
+            "PUT",
+            "POST",
+            "DELETE",
+            "OPTIONS"
+        ],
+        "responseHeader": [
+            "Content-Type",
+            "Content-Length",
+            "Access-Control-Allow-Origin",
+            "Access-Control-Allow-Methods",
+            "Access-Control-Allow-Headers",
+            "Authorization"
+        ],
+        "maxAgeSeconds": 3600
+    }
+]

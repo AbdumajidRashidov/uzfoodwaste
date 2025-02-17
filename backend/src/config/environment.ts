@@ -4,8 +4,8 @@ dotenv.config();
 
 export const config = {
   port: process.env.PORT,
-  jwtSecret: process.env.JWT_SECRET,
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || "24h",
+  jwtSecret: process.env.JWT_SECRET || "default_secret",
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || ("24h" as string | number),
   nodeEnv: process.env.NODE_ENV || "development",
   clientUrl: process.env.CLIENT_URL,
   google: {

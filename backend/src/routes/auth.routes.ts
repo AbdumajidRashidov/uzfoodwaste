@@ -1,6 +1,7 @@
 // src/routes/auth.routes.ts
 import { Router } from "express";
 import { AuthController } from "../controllers/auth.controller";
+import { telegramAuthController } from "./../controllers/telegram-auth.controller";
 import { validate } from "../middlewares/validation.middleware";
 import { body } from "express-validator";
 import { protect } from "../middlewares/auth.middleware";
@@ -9,8 +10,8 @@ const router = Router();
 const authController = new AuthController();
 
 router.post("/google", authController.googleAuth);
-
 router.post("/apple", authController.appleAuth);
+router.post("/telegram", telegramAuthController.authenticate);
 
 router.post(
   "/register",

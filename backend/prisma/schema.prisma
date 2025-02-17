@@ -27,6 +27,9 @@ model User {
   password_reset_token   String?
   password_reset_expires DateTime?
   phone_verified         Boolean   @default(false)
+  telegram_id            String?   @unique
+  telegram_username      String?
+  telegram_photo         String?
 
   // Relations
   customer                 Customer?
@@ -118,6 +121,7 @@ model FoodListing {
   is_halal             Boolean  @default(false)
   preparation_time     String?
   storage_instructions String?
+  pickup_status        String   @default("normal") // 'expired', 'urgent', 'warning', 'normal'
 
   // Relations
   business       Business          @relation(fields: [business_id], references: [id])
@@ -130,6 +134,7 @@ model FoodListing {
   @@index([business_id])
   @@index([location_id])
   @@index([status])
+  @@index([pickup_status]) // New index for efficient urgency queries
 }
 
 model SavedListing {
