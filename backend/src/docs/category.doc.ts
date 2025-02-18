@@ -68,7 +68,7 @@
  *             required:
  *               - name
  *               - description
- *               - icon
+ *               - image_url
  *             properties:
  *               name:
  *                 type: string
@@ -76,9 +76,9 @@
  *               description:
  *                 type: string
  *                 description: Category description
- *               icon:
+ *               image_url:
  *                 type: string
- *                 description: Category icon (URL or icon name)
+ *                 description: Category image (URL or image name)
  *     responses:
  *       201:
  *         description: Category created successfully
@@ -160,7 +160,7 @@
  *             required:
  *               - name
  *               - description
- *               - icon
+ *               - image_url
  *             properties:
  *               name:
  *                 type: string
@@ -168,9 +168,9 @@
  *               description:
  *                 type: string
  *                 description: Category description
- *               icon:
+ *               image_url:
  *                 type: string
- *                 description: Category icon (URL or icon name)
+ *                 description: Category image_url (URL or image_url name)
  *     responses:
  *       201:
  *         description: Category created successfully
@@ -248,9 +248,9 @@
  *               description:
  *                 type: string
  *                 description: Category description
- *               icon:
+ *               image_url:
  *                 type: string
- *                 description: Category icon (URL or icon name)
+ *                 description: Category image_url (URL or image_url name)
  *     responses:
  *       200:
  *         description: Category updated successfully
@@ -328,9 +328,9 @@
  *           type: string
  *           description: The category description
  *           example: "Fresh bread and pastries"
- *         icon:
+ *         image_url:
  *           type: string
- *           description: Icon identifier or URL
+ *           description: image_url identifier or URL
  *           example: "bread"
  *         _count:
  *           type: object

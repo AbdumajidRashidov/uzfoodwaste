@@ -203,7 +203,7 @@ model Category {
   id          String @id @default(uuid())
   name        String @unique
   description String
-  icon        String
+  image_url   String
 
   // Relations
   listings ListingCategory[]

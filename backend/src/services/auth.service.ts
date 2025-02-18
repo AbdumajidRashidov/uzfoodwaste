@@ -127,6 +127,17 @@ export class AuthService {
     // Generate token
     const token = this.generateToken(user.id);
 
+    const customer = await prisma.customer.findUnique({
+      where: {
+        user_id: user.id,
+      },
+    });
+    const business = await prisma.business.findUnique({
+      where: {
+        user_id: user.id,
+      },
+    });
+
     return {
       token,
       user: {
@@ -134,6 +145,8 @@ export class AuthService {
         email: user.email,
         role: user.role,
         is_verified: user.is_verified,
+        customer,
+        business,
       },
     };
   }

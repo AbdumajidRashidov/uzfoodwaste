@@ -25,7 +25,7 @@ router.post(
       .isString()
       .notEmpty()
       .withMessage("Description is required"),
-    body("icon").isString().notEmpty().withMessage("Icon is required"),
+    body("image").isString().notEmpty().withMessage("image is required"),
   ],
   validate,
   categoryController.createCategory
@@ -40,7 +40,7 @@ router.patch(
       .optional()
       .isString()
       .withMessage("Description must be a string"),
-    body("icon").optional().isString().withMessage("Icon must be a string"),
+    body("image").optional().isString().withMessage("Image must be a string"),
   ],
   validate,
   categoryController.updateCategory
