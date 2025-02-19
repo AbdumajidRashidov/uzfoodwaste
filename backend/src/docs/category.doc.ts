@@ -76,7 +76,7 @@
  *               description:
  *                 type: string
  *                 description: Category description
- *                 image:
+ *               image:
  *                 type: string
  *                 description: Category image (URL or image name)
  *     responses:
@@ -168,7 +168,7 @@
  *               description:
  *                 type: string
  *                 description: Category description
- *                 image:
+ *               image:
  *                 type: string
  *                 description: Category image (URL or image name)
  *     responses:
@@ -248,7 +248,7 @@
  *               description:
  *                 type: string
  *                 description: Category description
- *                  image:
+ *               image:
  *                 type: string
  *                 description: Category image (URL or image name)
  *     responses:
