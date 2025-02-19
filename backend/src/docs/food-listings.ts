@@ -21,7 +21,7 @@
  *           type: string
  *         description:
  *           type: string
- *         image_url:
+ *         image:
  *           type: string
  *
  *     Location:

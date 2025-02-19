@@ -125,7 +125,7 @@ export class AdminService {
   async createCategory(data: {
     name: string;
     description: string;
-    image_url: string;
+    image: string;
   }): Promise<Category> {
     const existingCategory = await prisma.category.findUnique({
       where: { name: data.name },
@@ -145,7 +145,7 @@ export class AdminService {
     data: {
       name?: string;
       description?: string;
-      image_url?: string;
+      image?: string;
     }
   ): Promise<Category> {
     const category = await prisma.category.findUnique({

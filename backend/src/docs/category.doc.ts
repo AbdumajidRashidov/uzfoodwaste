@@ -68,7 +68,7 @@
  *             required:
  *               - name
  *               - description
- *               - image_url
+ *               - image
  *             properties:
  *               name:
  *                 type: string
@@ -76,7 +76,7 @@
  *               description:
  *                 type: string
  *                 description: Category description
- *               image_url:
+ *                 image:
  *                 type: string
  *                 description: Category image (URL or image name)
  *     responses:
@@ -160,7 +160,7 @@
  *             required:
  *               - name
  *               - description
- *               - image_url
+ *               - image
  *             properties:
  *               name:
  *                 type: string
@@ -168,9 +168,9 @@
  *               description:
  *                 type: string
  *                 description: Category description
- *               image_url:
+ *                 image:
  *                 type: string
- *                 description: Category image_url (URL or image_url name)
+ *                 description: Category image (URL or image name)
  *     responses:
  *       201:
  *         description: Category created successfully
@@ -248,9 +248,9 @@
  *               description:
  *                 type: string
  *                 description: Category description
- *               image_url:
+ *                  image:
  *                 type: string
- *                 description: Category image_url (URL or image_url name)
+ *                 description: Category image (URL or image name)
  *     responses:
  *       200:
  *         description: Category updated successfully
@@ -328,9 +328,9 @@
  *           type: string
  *           description: The category description
  *           example: "Fresh bread and pastries"
- *         image_url:
+ *         image:
  *           type: string
- *           description: image_url identifier or URL
+ *           description: image identifier or URL
  *           example: "bread"
  *         _count:
  *           type: object

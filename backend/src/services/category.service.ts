@@ -8,7 +8,7 @@ export class CategoryService {
   async createCategory(data: {
     name: string;
     description: string;
-    image_url: string;
+    image: string;
   }) {
     // Check if category with same name exists
     const existingCategory = await prisma.category.findUnique({
@@ -32,7 +32,7 @@ export class CategoryService {
     data: {
       name?: string;
       description?: string;
-      image_url?: string;
+      image?: string;
     }
   ) {
     // Check if category exists
