@@ -14,6 +14,7 @@ import deviceRoutes from "./device.routes";
 import referralRoutes from "./referral.routes";
 import adminRoutes from "./admin.routes";
 import fileRoutes from "./file.routes";
+import bannerRoutes from "./banner.routes";
 
 import { apiLimiter } from "../middlewares/rate-limit.middleware";
 
@@ -47,5 +48,6 @@ router.use(`${API_VERSION}/devices`, deviceRoutes);
 router.use(`${API_VERSION}/referrals`, referralRoutes);
 router.use(`${API_VERSION}/files`, fileRoutes);
 router.use(`${API_VERSION}/admin`, adminRoutes);
+router.use(`${API_VERSION}/banners`, bannerRoutes);
 
 export default router;

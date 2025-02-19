@@ -209,6 +209,21 @@ model Category {
   listings ListingCategory[]
 }
 
+model Banner {
+  id           String   @id @default(uuid())
+  title        String
+  title1       String?
+  title2       String?
+  image        String
+  btnText      String?
+  description1 String?
+  description2 String?
+  isActive     Boolean  @default(true)
+  order        Int      @default(0)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+}
+
 model ListingCategory {
   listing_id  String
   category_id String
