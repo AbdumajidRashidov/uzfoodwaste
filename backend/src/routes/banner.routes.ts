@@ -8,6 +8,21 @@ import { body, query } from "express-validator";
 const router = Router();
 const bannerController = new BannerController();
 
+// Get single banner
+router.get("/:bannerId", bannerController.getBanner);
+
+// Get all banners
+router.get(
+  "/",
+  [
+    query("page").optional().isInt({ min: 1 }),
+    query("limit").optional().isInt({ min: 1, max: 100 }),
+    query("isActive").optional().isBoolean(),
+  ],
+  validate,
+  bannerController.getAllBanners
+);
+
 // Protect all routes - only admin access
 router.use(protect);
 router.use(authorize("ADMIN"));
@@ -50,21 +65,6 @@ router.patch(
 
 // Delete banner
 router.delete("/:bannerId", bannerController.deleteBanner);
-
-// Get single banner
-router.get("/:bannerId", bannerController.getBanner);
-
-// Get all banners
-router.get(
-  "/",
-  [
-    query("page").optional().isInt({ min: 1 }),
-    query("limit").optional().isInt({ min: 1, max: 100 }),
-    query("isActive").optional().isBoolean(),
-  ],
-  validate,
-  bannerController.getAllBanners
-);
 
 // Update banner order
 router.patch(
