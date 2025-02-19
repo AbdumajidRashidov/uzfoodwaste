@@ -98,8 +98,14 @@ export class AuthService {
           },
         });
       }
+      const business = await prisma.business.findUnique({
+        where: {
+          user_id: user.id,
+        },
+      });
+
       const sanitizedUser = excludeSensitiveFields(user);
-      return sanitizedUser;
+      return { ...sanitizedUser, business };
     });
 
     // Generate token
