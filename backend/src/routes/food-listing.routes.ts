@@ -138,6 +138,7 @@ router.delete(
 router.get(
   "/business/listings",
   authorize("BUSINESS"),
+  [...FoodListingController.queryValidation],
   foodListingController.getBusinessListings
 );
 

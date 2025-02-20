@@ -59,6 +59,7 @@ model Customer {
   saved_listings SavedListing[]
   reservations   Reservation[]
   reviews        Review[]
+  branch_reviews BranchReview[]
 }
 
 model Business {
@@ -81,6 +82,53 @@ model Business {
   locations     BusinessLocation[]
   food_listings FoodListing[]
   reviews       Review[]
+  branches      Branch[]
+}
+
+model Branch {
+  id              String   @id @default(uuid())
+  business_id     String
+  location_id     String   @unique
+  name            String
+  branch_code     String   @unique
+  description     String?
+  status          String   @default("ACTIVE") // ACTIVE, INACTIVE
+  opening_date    DateTime
+  manager_name    String
+  manager_email   String
+  manager_phone   String
+  operating_hours Json // Store as structured JSON
+  services        String[] // Array of services offered
+  policies        Json? // Store branch-specific policies as JSON
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  business       Business         @relation(fields: [business_id], references: [id])
+  location       BusinessLocation @relation(fields: [location_id], references: [id])
+  food_listings  FoodListing[]
+  branch_reviews BranchReview[]
+
+  @@index([business_id])
+  @@index([branch_code])
+  @@index([status])
+}
+
+model BranchReview {
+  id          String   @id @default(uuid())
+  branch_id   String
+  customer_id String
+  rating      Int
+  comment     String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  branch   Branch   @relation(fields: [branch_id], references: [id])
+  customer Customer @relation(fields: [customer_id], references: [id])
+
+  @@index([branch_id])
+  @@index([customer_id])
 }
 
 model BusinessLocation {
@@ -99,6 +147,7 @@ model BusinessLocation {
   // Relations
   business      Business      @relation(fields: [business_id], references: [id])
   food_listings FoodListing[]
+  branch        Branch?
 }
 
 model FoodListing {
@@ -121,6 +170,7 @@ model FoodListing {
   is_halal             Boolean  @default(false)
   preparation_time     String?
   storage_instructions String?
+  branch_id            String?
   pickup_status        String   @default("normal") // 'expired', 'urgent', 'warning', 'normal'
 
   // Relations
@@ -130,9 +180,11 @@ model FoodListing {
   reservations   Reservation[]
   reviews        Review[]
   categories     ListingCategory[]
+  branch         Branch?           @relation(fields: [branch_id], references: [id])
 
   @@index([business_id])
   @@index([location_id])
+  @@index([branch_id])
   @@index([status])
   @@index([pickup_status]) // New index for efficient urgency queries
 }

@@ -44,3 +44,15 @@ export type NotificationQuery = {
   type?: Notification["type"];
   isRead?: boolean;
 };
+
+type MessageType = "INFO" | "SUCCESS" | "WARNING" | "ERROR";
+
+export interface NotificationEmailData {
+  type: MessageType;
+  subject: string;
+  body: string;
+  recipientEmail: string;
+  timestamp: Date;
+  title?: string; // Make optional with ?
+  message?: string; // Make optional with ?
+}

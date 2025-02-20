@@ -16,6 +16,7 @@ interface QueryOptions {
   status?: string;
   from_date?: Date;
   to_date?: Date;
+  branch_id?: string;
 }
 
 export class ReservationService {
@@ -32,6 +33,7 @@ export class ReservationService {
       include: {
         business: true,
         location: true,
+        branch: true,
       },
     });
 
@@ -78,7 +80,6 @@ export class ReservationService {
 
     // Create reservation in a transaction
     const reservation = await prisma.$transaction(async (prisma) => {
-      // Create the reservation
       const newReservation = await prisma.reservation.create({
         data: {
           customer_id: customerId,
@@ -91,6 +92,7 @@ export class ReservationService {
             include: {
               business: true,
               location: true,
+              branch: true,
             },
           },
           customer: {
@@ -106,7 +108,6 @@ export class ReservationService {
         },
       });
 
-      // Update listing quantity
       await prisma.foodListing.update({
         where: { id: data.listing_id },
         data: {
@@ -119,13 +120,14 @@ export class ReservationService {
       return newReservation;
     });
 
-    // Send confirmation email
     await emailService.sendReservationCreatedEmail(
       reservation.customer.user.email,
       {
         reservationId: reservation.id,
         listing: reservation.listing,
         pickup_time: pickupTime,
+        pickup_address: reservation.listing.location.address,
+        branch_info: null,
       }
     );
 
@@ -140,16 +142,13 @@ export class ReservationService {
       payment_method: string;
     }
   ) {
-    // Process payment first
     const { payment, reservation } = await paymentService.processPayment(
       reservationId,
       paymentData
     );
 
-    // Generate QR code after successful payment
     const qrData = await qrCodeService.generateReservationQR(reservationId);
 
-    // Send payment confirmation email
     await emailService.sendPaymentConfirmationEmail(
       reservation.customer.user.email,
       {
@@ -158,6 +157,9 @@ export class ReservationService {
         confirmationCode: qrData.confirmation_code,
         amount: paymentData.amount,
         currency: paymentData.currency,
+        pickup_address: reservation.listing.location.address,
+        listing_title: reservation.listing.title,
+        business_name: reservation.listing.business.company_name,
       }
     );
 
@@ -174,13 +176,14 @@ export class ReservationService {
     confirmationCode: string,
     businessId: string
   ) {
-    // Verify the reservation belongs to the business
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
       include: {
         listing: {
           include: {
             business: true,
+            location: true,
+            branch: true,
           },
         },
         customer: {
@@ -208,14 +211,11 @@ export class ReservationService {
       throw new AppError("Only confirmed reservations can be picked up", 400);
     }
 
-    // Verify confirmation code
     if (reservation.confirmation_code !== confirmationCode) {
       throw new AppError("Invalid confirmation code", 400);
     }
 
-    // Update reservation status in transaction
     const updatedReservation = await prisma.$transaction(async (prisma) => {
-      // Update reservation status
       const updated = await prisma.reservation.update({
         where: { id: reservationId },
         data: {
@@ -227,6 +227,7 @@ export class ReservationService {
             include: {
               business: true,
               location: true,
+              branch: true,
             },
           },
           customer: {
@@ -242,7 +243,6 @@ export class ReservationService {
         },
       });
 
-      // Update listing status if no more quantity
       if (updated.listing.quantity <= 1) {
         await prisma.foodListing.update({
           where: { id: updated.listing_id },
@@ -255,18 +255,464 @@ export class ReservationService {
       return updated;
     });
 
-    // Send pickup confirmation email
-    await emailService.sendPickupConfirmationEmail(
+    await emailService.sendReservationStatusUpdateEmail(
       updatedReservation.customer.user.email,
       {
         reservationId,
+        status: "COMPLETED",
         listing: updatedReservation.listing,
-        pickup_time: updatedReservation.pickup_confirmed_at!,
+        pickup_address: updatedReservation.listing.location.address,
+        branch_info: updatedReservation.listing.branch
+          ? {
+              name: updatedReservation.listing.branch.name,
+              branch_code: updatedReservation.listing.branch.branch_code,
+            }
+          : null,
       }
     );
 
     return updatedReservation;
   }
+
+  async getReservationStatus(
+    reservationId: string,
+    userId: string,
+    userRole: string
+  ) {
+    const reservation = await prisma.reservation.findUnique({
+      where: { id: reservationId },
+      include: {
+        listing: {
+          include: {
+            business: true,
+            location: true,
+            branch: true,
+          },
+        },
+        payment_transactions: {
+          where: {
+            status: "COMPLETED",
+          },
+        },
+        customer: {
+          include: {
+            user: {
+              select: {
+                email: true,
+                phone: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!reservation) {
+      throw new AppError("Reservation not found", 404);
+    }
+
+    if (
+      (userRole === "CUSTOMER" && reservation.customer_id !== userId) ||
+      (userRole === "BUSINESS" && reservation.listing.business_id !== userId)
+    ) {
+      throw new AppError("Not authorized to access this reservation", 403);
+    }
+
+    const pickupLocation = reservation.listing.branch
+      ? `${reservation.listing.branch.name} (${reservation.listing.branch.branch_code}) - ${reservation.listing.location.address}`
+      : reservation.listing.location.address;
+
+    return {
+      status: reservation.status,
+      is_paid: reservation.payment_transactions.length > 0,
+      pickup_time: reservation.pickup_time,
+      pickup_confirmed_at: reservation.pickup_confirmed_at,
+      has_qr_code: !!reservation.confirmation_code,
+      listing: {
+        title: reservation.listing.title,
+        price: reservation.listing.price,
+        business_name: reservation.listing.business.company_name,
+        pickup_location: pickupLocation,
+        branch: reservation.listing.branch,
+      },
+      customer: {
+        name: `${reservation.customer.first_name} ${reservation.customer.last_name}`,
+        phone: reservation.customer.user.phone,
+      },
+    };
+  }
+
+  async updateReservationStatus(
+    reservationId: string,
+    data: {
+      status: "CONFIRMED" | "COMPLETED" | "CANCELLED";
+      cancellation_reason?: string;
+    },
+    actorId: string,
+    actorRole: "CUSTOMER" | "BUSINESS"
+  ) {
+    const reservation = await prisma.reservation.findUnique({
+      where: { id: reservationId },
+      include: {
+        listing: {
+          include: {
+            business: true,
+            location: true,
+            branch: true,
+          },
+        },
+        customer: {
+          include: {
+            user: {
+              select: {
+                email: true,
+                phone: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!reservation) {
+      throw new AppError("Reservation not found", 404);
+    }
+
+    if (
+      (actorRole === "CUSTOMER" && reservation.customer_id !== actorId) ||
+      (actorRole === "BUSINESS" && reservation.listing.business_id !== actorId)
+    ) {
+      throw new AppError("Not authorized to update this reservation", 403);
+    }
+
+    const validTransitions: { [key: string]: string[] } = {
+      PENDING: ["CONFIRMED", "CANCELLED"],
+      CONFIRMED: ["COMPLETED", "CANCELLED"],
+      COMPLETED: [],
+      CANCELLED: [],
+    };
+
+    if (!validTransitions[reservation.status].includes(data.status)) {
+      throw new AppError(
+        `Cannot transition from ${reservation.status} to ${data.status}`,
+        400
+      );
+    }
+
+    if (data.status === "CANCELLED" && !data.cancellation_reason) {
+      throw new AppError("Cancellation reason is required", 400);
+    }
+
+    const updatedReservation = await prisma.$transaction(async (prisma) => {
+      const updated = await prisma.reservation.update({
+        where: { id: reservationId },
+        data: {
+          status: data.status,
+          cancellation_reason: data.cancellation_reason,
+          ...(data.status === "COMPLETED"
+            ? { pickup_confirmed_at: new Date() }
+            : {}),
+        },
+        include: {
+          listing: {
+            include: {
+              business: true,
+              location: true,
+              branch: true,
+            },
+          },
+          customer: {
+            include: {
+              user: {
+                select: {
+                  email: true,
+                  phone: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (data.status === "CANCELLED") {
+        await prisma.foodListing.update({
+          where: { id: updated.listing_id },
+          data: {
+            quantity: {
+              increment: 1,
+            },
+          },
+        });
+      }
+
+      return updated;
+    });
+
+    await emailService.sendReservationStatusUpdateEmail(
+      updatedReservation.customer.user.email,
+      {
+        reservationId,
+        status: data.status,
+        listing: updatedReservation.listing,
+        cancellation_reason: data.cancellation_reason,
+        pickup_address: updatedReservation.listing.location.address,
+        branch_info: updatedReservation.listing.branch
+          ? {
+              name: updatedReservation.listing.branch.name,
+              branch_code: updatedReservation.listing.branch.branch_code,
+            }
+          : null,
+      }
+    );
+
+    return updatedReservation;
+  }
+
+  async getCustomerReservations(customerId: string, query: QueryOptions) {
+    const where: any = { customer_id: customerId };
+
+    if (query.status) {
+      where.status = query.status;
+    }
+
+    if (query.from_date || query.to_date) {
+      where.pickup_time = {};
+      if (query.from_date) where.pickup_time.gte = query.from_date;
+      if (query.to_date) where.pickup_time.lte = query.to_date;
+    }
+
+    const page = query.page || 1;
+    const limit = query.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const [total, reservations] = await Promise.all([
+      prisma.reservation.count({ where }),
+      prisma.reservation.findMany({
+        where,
+        include: {
+          listing: {
+            include: {
+              business: true,
+              location: true,
+              branch: true,
+              categories: {
+                include: {
+                  category: true,
+                },
+              },
+            },
+          },
+          payment_transactions: {
+            where: {
+              status: "COMPLETED",
+            },
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          created_at: "desc",
+        },
+      }),
+    ]);
+
+    const formattedReservations = reservations.map((reservation) => {
+      const pickupLocation = reservation.listing.branch
+        ? `${reservation.listing.branch.name} (${reservation.listing.branch.branch_code}) - ${reservation.listing.location.address}`
+        : reservation.listing.location.address;
+
+      return {
+        ...reservation,
+        listing: {
+          ...reservation.listing,
+          pickup_location: pickupLocation,
+        },
+      };
+    });
+
+    return {
+      data: formattedReservations,
+      pagination: {
+        total,
+        page,
+        limit,
+        total_pages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async getReservationQR(
+    reservationId: string,
+    userId: string,
+    userRole: string
+  ) {
+    const reservation = await prisma.reservation.findUnique({
+      where: { id: reservationId },
+      include: {
+        listing: {
+          include: {
+            business: true,
+            location: true,
+            branch: true,
+          },
+        },
+        customer: true,
+        payment_transactions: {
+          where: {
+            status: "COMPLETED",
+          },
+        },
+      },
+    });
+
+    if (!reservation) {
+      throw new AppError("Reservation not found", 404);
+    }
+
+    if (
+      (userRole === "CUSTOMER" && reservation.customer_id !== userId) ||
+      (userRole === "BUSINESS" && reservation.listing.business_id !== userId)
+    ) {
+      throw new AppError("Not authorized to access this reservation", 403);
+    }
+
+    if (reservation.payment_transactions.length === 0) {
+      throw new AppError(
+        "Payment must be completed before accessing QR code",
+        400
+      );
+    }
+
+    if (!["CONFIRMED", "COMPLETED"].includes(reservation.status)) {
+      throw new AppError(
+        "QR code is only available for confirmed reservations",
+        400
+      );
+    }
+
+    const qrData = await qrCodeService.generateReservationQR(reservationId);
+
+    const pickupLocation = reservation.listing.branch
+      ? `${reservation.listing.branch.name} (${reservation.listing.branch.branch_code}) - ${reservation.listing.location.address}`
+      : reservation.listing.location.address;
+
+    return {
+      ...qrData,
+      reservation_status: reservation.status,
+      pickup_time: reservation.pickup_time,
+      business_name: reservation.listing.business.company_name,
+      listing_title: reservation.listing.title,
+      pickup_location: pickupLocation,
+      branch_info: reservation.listing.branch
+        ? {
+            name: reservation.listing.branch.name,
+            branch_code: reservation.listing.branch.branch_code,
+            operating_hours: reservation.listing.branch.operating_hours,
+            manager_name: reservation.listing.branch.manager_name,
+            manager_phone: reservation.listing.branch.manager_phone,
+          }
+        : null,
+      is_expired: new Date() > reservation.pickup_time,
+      is_valid: reservation.status === "CONFIRMED",
+      formatted_pickup_time: reservation.pickup_time.toLocaleString(),
+    };
+  }
+
+  async getBusinessReservations(businessId: string, query: QueryOptions) {
+    const where: any = {
+      listing: {
+        business_id: businessId,
+      },
+    };
+
+    if (query.status) {
+      where.status = query.status;
+    }
+
+    if (query.branch_id) {
+      where.listing.branch_id = query.branch_id;
+    }
+
+    if (query.from_date || query.to_date) {
+      where.pickup_time = {};
+      if (query.from_date) where.pickup_time.gte = query.from_date;
+      if (query.to_date) where.pickup_time.lte = query.to_date;
+    }
+
+    const page = query.page || 1;
+    const limit = query.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const [total, reservations] = await Promise.all([
+      prisma.reservation.count({ where }),
+      prisma.reservation.findMany({
+        where,
+        include: {
+          customer: {
+            include: {
+              user: {
+                select: {
+                  email: true,
+                  phone: true,
+                },
+              },
+            },
+          },
+          listing: {
+            include: {
+              location: true,
+              branch: true,
+              business: true,
+            },
+          },
+          payment_transactions: {
+            where: {
+              status: "COMPLETED",
+            },
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          created_at: "desc",
+        },
+      }),
+    ]);
+
+    const formattedReservations = reservations.map((reservation) => {
+      const pickupLocation = reservation.listing.branch
+        ? `${reservation.listing.branch.name} (${reservation.listing.branch.branch_code}) - ${reservation.listing.location.address}`
+        : reservation.listing.location.address;
+
+      return {
+        ...reservation,
+        listing: {
+          ...reservation.listing,
+          pickup_location: pickupLocation,
+          branch_info: reservation.listing.branch
+            ? {
+                name: reservation.listing.branch.name,
+                branch_code: reservation.listing.branch.branch_code,
+                operating_hours: reservation.listing.branch.operating_hours,
+                manager_name: reservation.listing.branch.manager_name,
+                manager_phone: reservation.listing.branch.manager_phone,
+              }
+            : null,
+        },
+      };
+    });
+
+    return {
+      data: formattedReservations,
+      pagination: {
+        total,
+        page,
+        limit,
+        total_pages: Math.ceil(total / limit),
+      },
+    };
+  }
+
   async getReservation(
     reservationId: string,
     actorId: string,
@@ -279,6 +725,7 @@ export class ReservationService {
           include: {
             business: true,
             location: true,
+            branch: true,
             categories: {
               include: {
                 category: true,
@@ -328,6 +775,10 @@ export class ReservationService {
     const isPickupTime = new Date() >= reservation.pickup_time;
     const canCancel = ["PENDING", "CONFIRMED"].includes(reservation.status);
 
+    const pickupLocation = reservation.listing.branch
+      ? `${reservation.listing.branch.name} (${reservation.listing.branch.branch_code}) - ${reservation.listing.location.address}`
+      : reservation.listing.location.address;
+
     return {
       ...reservation,
       is_paid: isPaid,
@@ -339,380 +790,19 @@ export class ReservationService {
       total_amount: reservation.payment_transactions
         .filter((pt) => pt.status === "COMPLETED")
         .reduce((sum, pt) => sum + Number(pt.amount), 0),
-    };
-  }
-  async getReservationStatus(
-    reservationId: string,
-    userId: string,
-    userRole: string
-  ) {
-    const reservation = await prisma.reservation.findUnique({
-      where: { id: reservationId },
-      include: {
-        listing: {
-          include: {
-            business: true,
-            location: true,
-          },
-        },
-        payment_transactions: {
-          where: {
-            status: "COMPLETED",
-          },
-        },
-        customer: {
-          include: {
-            user: {
-              select: {
-                email: true,
-                phone: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!reservation) {
-      throw new AppError("Reservation not found", 404);
-    }
-
-    // Check authorization
-    if (
-      (userRole === "CUSTOMER" && reservation.customer_id !== userId) ||
-      (userRole === "BUSINESS" && reservation.listing.business_id !== userId)
-    ) {
-      throw new AppError("Not authorized to access this reservation", 403);
-    }
-
-    return {
-      status: reservation.status,
-      is_paid: reservation.payment_transactions.length > 0,
-      pickup_time: reservation.pickup_time,
-      pickup_confirmed_at: reservation.pickup_confirmed_at,
-      has_qr_code: !!reservation.confirmation_code,
       listing: {
-        title: reservation.listing.title,
-        price: reservation.listing.price,
-        business_name: reservation.listing.business.company_name,
-        location: reservation.listing.location,
+        ...reservation.listing,
+        pickup_location: pickupLocation,
+        branch_info: reservation.listing.branch
+          ? {
+              name: reservation.listing.branch.name,
+              branch_code: reservation.listing.branch.branch_code,
+              operating_hours: reservation.listing.branch.operating_hours,
+              manager_name: reservation.listing.branch.manager_name,
+              manager_phone: reservation.listing.branch.manager_phone,
+            }
+          : null,
       },
-      customer: {
-        name: `${reservation.customer.first_name} ${reservation.customer.last_name}`,
-        phone: reservation.customer.user.phone,
-      },
-    };
-  }
-
-  async updateReservationStatus(
-    reservationId: string,
-    data: {
-      status: "CONFIRMED" | "COMPLETED" | "CANCELLED";
-      cancellation_reason?: string;
-    },
-    actorId: string,
-    actorRole: "CUSTOMER" | "BUSINESS"
-  ) {
-    const reservation = await prisma.reservation.findUnique({
-      where: { id: reservationId },
-      include: {
-        listing: {
-          include: {
-            business: true,
-          },
-        },
-        customer: {
-          include: {
-            user: {
-              select: {
-                email: true,
-                phone: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!reservation) {
-      throw new AppError("Reservation not found", 404);
-    }
-
-    // Verify actor permissions
-    if (actorRole === "CUSTOMER" && reservation.customer_id !== actorId) {
-      throw new AppError("Not authorized to update this reservation", 403);
-    }
-    if (
-      actorRole === "BUSINESS" &&
-      reservation.listing.business_id !== actorId
-    ) {
-      throw new AppError("Not authorized to update this reservation", 403);
-    }
-
-    // Validate status transition
-    const validTransitions: { [key: string]: string[] } = {
-      PENDING: ["CONFIRMED", "CANCELLED"],
-      CONFIRMED: ["COMPLETED", "CANCELLED"],
-      COMPLETED: [],
-      CANCELLED: [],
-    };
-
-    if (!validTransitions[reservation.status].includes(data.status)) {
-      throw new AppError(
-        `Cannot transition from ${reservation.status} to ${data.status}`,
-        400
-      );
-    }
-
-    // Require cancellation reason
-    if (data.status === "CANCELLED" && !data.cancellation_reason) {
-      throw new AppError("Cancellation reason is required", 400);
-    }
-
-    // Update status in transaction
-    const updatedReservation = await prisma.$transaction(async (prisma) => {
-      const updated = await prisma.reservation.update({
-        where: { id: reservationId },
-        data: {
-          status: data.status,
-          cancellation_reason: data.cancellation_reason,
-          ...(data.status === "COMPLETED"
-            ? { pickup_confirmed_at: new Date() }
-            : {}),
-        },
-        include: {
-          listing: {
-            include: {
-              business: true,
-              location: true,
-            },
-          },
-          customer: {
-            include: {
-              user: {
-                select: {
-                  email: true,
-                  phone: true,
-                },
-              },
-            },
-          },
-        },
-      });
-
-      // If cancelled, restore listing quantity
-      if (data.status === "CANCELLED") {
-        await prisma.foodListing.update({
-          where: { id: updated.listing_id },
-          data: {
-            quantity: {
-              increment: 1,
-            },
-          },
-        });
-      }
-
-      return updated;
-    });
-
-    // Send status update email
-    await emailService.sendReservationStatusUpdateEmail(
-      updatedReservation.customer.user.email,
-      {
-        reservationId,
-        status: data.status,
-        listing: updatedReservation.listing,
-        cancellation_reason: data.cancellation_reason,
-      }
-    );
-
-    return updatedReservation;
-  }
-
-  async getBusinessReservations(businessId: string, query: QueryOptions) {
-    const where: any = {
-      listing: {
-        business_id: businessId,
-      },
-    };
-
-    if (query.status) {
-      where.status = query.status;
-    }
-
-    if (query.from_date || query.to_date) {
-      where.pickup_time = {};
-      if (query.from_date) where.pickup_time.gte = query.from_date;
-      if (query.to_date) where.pickup_time.lte = query.to_date;
-    }
-
-    const page = query.page || 1;
-    const limit = query.limit || 10;
-    const skip = (page - 1) * limit;
-
-    const [total, reservations] = await Promise.all([
-      prisma.reservation.count({ where }),
-      prisma.reservation.findMany({
-        where,
-        include: {
-          customer: {
-            include: {
-              user: {
-                select: {
-                  email: true,
-                  phone: true,
-                },
-              },
-            },
-          },
-          listing: {
-            include: {
-              location: true,
-            },
-          },
-          payment_transactions: {
-            where: {
-              status: "COMPLETED",
-            },
-          },
-        },
-        skip,
-        take: limit,
-        orderBy: {
-          created_at: "desc",
-        },
-      }),
-    ]);
-
-    return {
-      data: reservations,
-      pagination: {
-        total,
-        page,
-        limit,
-        total_pages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  async getCustomerReservations(customerId: string, query: QueryOptions) {
-    const where: any = {
-      customer_id: customerId,
-    };
-
-    if (query.status) {
-      where.status = query.status;
-    }
-
-    if (query.from_date || query.to_date) {
-      where.pickup_time = {};
-      if (query.from_date) where.pickup_time.gte = query.from_date;
-      if (query.to_date) where.pickup_time.lte = query.to_date;
-    }
-
-    const page = query.page || 1;
-    const limit = query.limit || 10;
-    const skip = (page - 1) * limit;
-
-    const [total, reservations] = await Promise.all([
-      prisma.reservation.count({ where }),
-      prisma.reservation.findMany({
-        where,
-        include: {
-          listing: {
-            include: {
-              business: true,
-              location: true,
-            },
-          },
-          payment_transactions: {
-            where: {
-              status: "COMPLETED",
-            },
-          },
-        },
-        skip,
-        take: limit,
-        orderBy: {
-          created_at: "desc",
-        },
-      }),
-    ]);
-
-    return {
-      data: reservations,
-      pagination: {
-        total,
-        page,
-        limit,
-        total_pages: Math.ceil(total / limit),
-      },
-    };
-  }
-  async getReservationQR(
-    reservationId: string,
-    userId: string,
-    userRole: string
-  ) {
-    // Verify access rights
-    const reservation = await prisma.reservation.findUnique({
-      where: { id: reservationId },
-      include: {
-        listing: {
-          include: {
-            business: true,
-          },
-        },
-        customer: true,
-        payment_transactions: {
-          where: {
-            status: "COMPLETED",
-          },
-        },
-      },
-    });
-
-    if (!reservation) {
-      throw new AppError("Reservation not found", 404);
-    }
-
-    // Check authorization
-    if (
-      (userRole === "CUSTOMER" && reservation.customer_id !== userId) ||
-      (userRole === "BUSINESS" && reservation.listing.business_id !== userId)
-    ) {
-      throw new AppError("Not authorized to access this reservation", 403);
-    }
-
-    // Check if payment is completed
-    if (reservation.payment_transactions.length === 0) {
-      throw new AppError(
-        "Payment must be completed before accessing QR code",
-        400
-      );
-    }
-
-    // Check if reservation is in valid status
-    if (!["CONFIRMED", "COMPLETED"].includes(reservation.status)) {
-      throw new AppError(
-        "QR code is only available for confirmed reservations",
-        400
-      );
-    }
-
-    // Generate or retrieve QR code
-    const qrData = await qrCodeService.generateReservationQR(reservationId);
-
-    // Add additional information for QR display
-    return {
-      ...qrData,
-      reservation_status: reservation.status,
-      pickup_time: reservation.pickup_time,
-      business_name: reservation.listing.business.company_name,
-      listing_title: reservation.listing.title,
-      is_expired: new Date() > reservation.pickup_time,
-      is_valid: reservation.status === "CONFIRMED",
-      formatted_pickup_time: reservation.pickup_time.toLocaleString(),
     };
   }
 }

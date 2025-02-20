@@ -53,6 +53,11 @@ export class NotificationService {
         await emailService.sendNotificationEmail(notification.user.email, {
           title: notification.title,
           message: notification.message,
+          type: "INFO", // or any appropriate type
+          subject: notification.title, // or any appropriate subject
+          body: notification.message, // or any appropriate body
+          recipientEmail: notification.user.email,
+          timestamp: new Date(), // or any appropriate timestamp
         });
       }
 

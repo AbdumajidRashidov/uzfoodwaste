@@ -90,7 +90,7 @@ router.post(
       .isString()
       .notEmpty()
       .withMessage("Description is required"),
-    body("icon").isString().notEmpty().withMessage("Icon is required"),
+    body("image").isString().notEmpty().withMessage("image is required"),
   ],
   validate,
   adminController.createCategory
@@ -101,7 +101,7 @@ router.patch(
   [
     body("name").optional().isString(),
     body("description").optional().isString(),
-    body("icon").optional().isString(),
+    body("image").optional().isString(),
   ],
   validate,
   adminController.updateCategory

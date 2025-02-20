@@ -30,6 +30,7 @@ export class FoodListingService {
       storage_instructions?: string;
       location_id: string;
       category_ids: string[];
+      branch_id?: string; // New field for branch
     }
   ) {
     // Verify business ownership of location
@@ -44,7 +45,23 @@ export class FoodListingService {
       throw new AppError("Invalid location", 400);
     }
 
-    // Create listing with categories
+    // If branch_id is provided, verify it belongs to the business
+    if (data.branch_id) {
+      const branch = await prisma.branch.findFirst({
+        where: {
+          id: data.branch_id,
+          business_id: businessId,
+          location_id: data.location_id,
+          status: "ACTIVE",
+        },
+      });
+
+      if (!branch) {
+        throw new AppError("Invalid or inactive branch", 400);
+      }
+    }
+
+    // Create listing with categories and branch
     const listing = await prisma.foodListing.create({
       data: {
         ...data,
@@ -58,6 +75,7 @@ export class FoodListingService {
       include: {
         business: true,
         location: true,
+        branch: true, // Include branch in response
         categories: {
           include: {
             category: true,
@@ -89,6 +107,7 @@ export class FoodListingService {
       storage_instructions?: string;
       location_id?: string;
       category_ids?: string[];
+      branch_id?: string; // New field for branch
     }
   ) {
     // Check if listing exists and belongs to business
@@ -114,6 +133,22 @@ export class FoodListingService {
 
       if (!location) {
         throw new AppError("Invalid location", 400);
+      }
+    }
+
+    // If branch is being updated, verify it belongs to the business
+    if (data.branch_id) {
+      const branch = await prisma.branch.findFirst({
+        where: {
+          id: data.branch_id,
+          business_id: businessId,
+          location_id: data.location_id || listing.location_id,
+          status: "ACTIVE",
+        },
+      });
+
+      if (!branch) {
+        throw new AppError("Invalid or inactive branch", 400);
       }
     }
 
@@ -151,45 +186,13 @@ export class FoodListingService {
     return this.getListing(updatedListing.id);
   }
 
-  async deleteListing(businessId: string, listingId: string) {
-    // Check if listing exists and belongs to business
-    const listing = await prisma.foodListing.findFirst({
-      where: {
-        id: listingId,
-        business_id: businessId,
-      },
-    });
-
-    if (!listing) {
-      throw new AppError("Listing not found", 404);
-    }
-
-    // Check if listing has any active reservations
-    const activeReservations = await prisma.reservation.findFirst({
-      where: {
-        listing_id: listingId,
-        status: {
-          in: ["PENDING", "CONFIRMED"],
-        },
-      },
-    });
-
-    if (activeReservations) {
-      throw new AppError("Cannot delete listing with active reservations", 400);
-    }
-
-    // Delete listing
-    await prisma.foodListing.delete({
-      where: { id: listingId },
-    });
-  }
-
   async getListing(listingId: string) {
     const listing = await prisma.foodListing.findUnique({
       where: { id: listingId },
       include: {
         business: true,
         location: true,
+        branch: true, // Include branch in response
         categories: {
           include: {
             category: true,
@@ -229,7 +232,8 @@ export class FoodListingService {
     status?: string;
     businessId?: string;
     locationId?: string;
-    prioritizeUrgent?: boolean; // New parameter
+    branchId?: string; // New query parameter
+    prioritizeUrgent?: boolean;
   }) {
     const page = query.page || 1;
     const limit = query.limit || 10;
@@ -238,7 +242,7 @@ export class FoodListingService {
     // Build where clause
     const where: any = {
       status: query.status || "AVAILABLE",
-      pickup_status: { not: "expired" }, // Don't show expired listings by default
+      pickup_status: { not: "expired" },
     };
 
     if (query.search) {
@@ -248,28 +252,20 @@ export class FoodListingService {
       ];
     }
 
-    // Add other existing filters...
-
-    // Define the order based on urgency prioritization
-    const orderBy: any[] = [];
-
-    if (query.prioritizeUrgent) {
-      // Order by pickup status priority (urgent -> warning -> normal)
-      orderBy.push({
-        pickup_status: {
-          sort: "asc",
-          // Custom sorting using Prisma's native database ordering
-          nulls: "last",
-          // This creates an ordering where 'urgent' comes first, then 'warning', then 'normal'
-          values: ["urgent", "warning", "normal"],
-        },
-      });
+    if (query.businessId) {
+      where.business_id = query.businessId;
     }
 
-    // Add secondary sorting by creation date
-    orderBy.push({ created_at: "desc" });
+    if (query.locationId) {
+      where.location_id = query.locationId;
+    }
 
-    // Get listings with prioritization
+    if (query.branchId) {
+      where.branch_id = query.branchId;
+    }
+
+    // Add other existing filters...
+
     const [total, listings] = await Promise.all([
       prisma.foodListing.count({ where }),
       prisma.foodListing.findMany({
@@ -277,6 +273,7 @@ export class FoodListingService {
         include: {
           business: true,
           location: true,
+          branch: true, // Include branch in response
           categories: {
             include: {
               category: true,
@@ -285,16 +282,16 @@ export class FoodListingService {
         },
         skip,
         take: limit,
-        orderBy,
+        orderBy: {
+          created_at: "desc",
+        },
       }),
     ]);
 
-    // Update pickup statuses before returning
+    // Update pickup statuses
     const updatedListings = await Promise.all(
       listings.map(async (listing) => {
         const status = getPickupTimeStatus(listing.pickup_end);
-
-        // Update pickup status if it has changed
         if (status !== listing.pickup_status) {
           await prisma.foodListing.update({
             where: { id: listing.id },
@@ -320,12 +317,63 @@ export class FoodListingService {
     };
   }
 
+  async deleteListing(businessId: string, listingId: string) {
+    // Check if listing exists and belongs to business
+    const listing = await prisma.foodListing.findFirst({
+      where: {
+        id: listingId,
+        business_id: businessId,
+      },
+      include: {
+        branch: true,
+      },
+    });
+
+    if (!listing) {
+      throw new AppError("Listing not found", 404);
+    }
+
+    // If listing belongs to a branch, verify branch is active
+    if (listing.branch_id) {
+      const branch = await prisma.branch.findFirst({
+        where: {
+          id: listing.branch_id,
+          status: "ACTIVE",
+        },
+      });
+
+      if (!branch) {
+        throw new AppError("Cannot delete listing from inactive branch", 400);
+      }
+    }
+
+    // Check if listing has any active reservations
+    const activeReservations = await prisma.reservation.findFirst({
+      where: {
+        listing_id: listingId,
+        status: {
+          in: ["PENDING", "CONFIRMED"],
+        },
+      },
+    });
+
+    if (activeReservations) {
+      throw new AppError("Cannot delete listing with active reservations", 400);
+    }
+
+    // Delete listing
+    await prisma.foodListing.delete({
+      where: { id: listingId },
+    });
+  }
+
   async getBusinessListings(
     businessId: string,
     query: {
       page?: number;
       limit?: number;
       status?: string;
+      branchId?: string; // Add branch filter
     }
   ) {
     const page = query.page || 1;
@@ -340,12 +388,17 @@ export class FoodListingService {
       where.status = query.status;
     }
 
+    if (query.branchId) {
+      where.branch_id = query.branchId;
+    }
+
     const [total, listings] = await Promise.all([
       prisma.foodListing.count({ where }),
       prisma.foodListing.findMany({
         where,
         include: {
           location: true,
+          branch: true, // Include branch information
           categories: {
             include: {
               category: true,
@@ -367,8 +420,22 @@ export class FoodListingService {
       }),
     ]);
 
+    // Add branch-specific statistics if listing belongs to a branch
+    const listingsWithStats = listings.map((listing) => {
+      const stats = {
+        active_reservations: listing.reservations.length,
+        branch_name: listing.branch?.name || null,
+        branch_status: listing.branch?.status || null,
+      };
+
+      return {
+        ...listing,
+        stats,
+      };
+    });
+
     return {
-      listings,
+      listings: listingsWithStats,
       pagination: {
         total,
         page,
@@ -384,14 +451,32 @@ export class FoodListingService {
         status: "AVAILABLE",
         pickup_status: { not: "expired" },
       },
+      include: {
+        branch: true, // Include branch to check its status
+      },
     });
 
     for (const listing of listings) {
       const status = getPickupTimeStatus(listing.pickup_end);
+
+      // Check if status needs to be updated
       if (status !== listing.pickup_status) {
+        const updateData: any = { pickup_status: status };
+
+        // If listing is expired, update status
+        if (status === "expired") {
+          updateData.status = "UNAVAILABLE";
+        }
+
+        // If listing belongs to a branch and branch is inactive,
+        // make sure listing is marked as unavailable
+        if (listing.branch && listing.branch.status === "INACTIVE") {
+          updateData.status = "UNAVAILABLE";
+        }
+
         await prisma.foodListing.update({
           where: { id: listing.id },
-          data: { pickup_status: status },
+          data: updateData,
         });
       }
     }
