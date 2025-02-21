@@ -261,7 +261,7 @@ export class FoodListingService {
     // Build where clause
     const where: any = {
       status: query.status || "AVAILABLE",
-      pickup_status: { not: "expired" },
+      // pickup_status: { not: "expired" },
     };
 
     if (query.search) {
