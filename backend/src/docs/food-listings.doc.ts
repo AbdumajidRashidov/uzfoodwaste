@@ -1,40 +1,131 @@
-// src/docs/foodlisting.doc.ts
+// src/docs/food-listings.doc.ts
 
 /**
  * @swagger
  * components:
  *   schemas:
- *     FoodListing:
+ *     Location:
  *       type: object
+ *       required:
+ *         - address
+ *         - latitude
+ *         - longitude
+ *         - city
+ *         - district
+ *         - postal_code
+ *         - phone
+ *         - working_hours
  *       properties:
  *         id:
  *           type: string
  *           format: uuid
- *           description: Unique identifier for the food listing
+ *           description: The auto-generated ID of the location
+ *         address:
+ *           type: string
+ *           description: Full address of the location
+ *         latitude:
+ *           type: number
+ *           format: float
+ *           minimum: -90
+ *           maximum: 90
+ *           description: Latitude coordinate
+ *         longitude:
+ *           type: number
+ *           format: float
+ *           minimum: -180
+ *           maximum: 180
+ *           description: Longitude coordinate
+ *         city:
+ *           type: string
+ *           description: City name
+ *         district:
+ *           type: string
+ *           description: District or area within the city
+ *         postal_code:
+ *           type: string
+ *           description: Postal or ZIP code
+ *         is_main_location:
+ *           type: boolean
+ *           default: false
+ *           description: Whether this is the main location for the business
+ *         phone:
+ *           type: string
+ *           description: Contact phone number for this location
+ *         working_hours:
+ *           type: string
+ *           description: Operating hours for this location
+ *
+ *     Branch:
+ *       type: object
+ *       required:
+ *         - name
+ *         - business_id
+ *         - location_id
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *           description: The auto-generated ID of the branch
+ *         name:
+ *           type: string
+ *           description: Name of the branch
+ *         business_id:
+ *           type: string
+ *           format: uuid
+ *           description: ID of the parent business
+ *         location_id:
+ *           type: string
+ *           format: uuid
+ *           description: ID of the branch location
+ *         status:
+ *           type: string
+ *           enum: [ACTIVE, INACTIVE]
+ *           default: ACTIVE
+ *           description: Current status of the branch
+ *
+ *     FoodListing:
+ *       type: object
+ *       required:
+ *         - title
+ *         - description
+ *         - price
+ *         - original_price
+ *         - quantity
+ *         - unit
+ *         - expiry_date
+ *         - pickup_start
+ *         - pickup_end
+ *         - location_id
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *           description: The auto-generated ID of the food listing
  *         title:
  *           type: string
- *           description: Title of the food listing
+ *           description: The title of the food listing
  *         description:
  *           type: string
  *           description: Detailed description of the food listing
  *         price:
  *           type: number
  *           format: float
- *           description: Discounted price of the food item
+ *           description: Discounted price of the food listing
  *         original_price:
  *           type: number
  *           format: float
  *           description: Original price before discount
  *         quantity:
  *           type: integer
- *           description: Available quantity of the food item
+ *           minimum: 1
+ *           description: Available quantity
  *         unit:
  *           type: string
- *           description: Unit of measurement (e.g., "pieces", "kg", "boxes")
+ *           description: Unit of measurement (e.g., kg, pieces)
  *         expiry_date:
  *           type: string
  *           format: date-time
- *           description: Expiration date and time of the food item
+ *           description: Food expiration date and time
  *         pickup_start:
  *           type: string
  *           format: date-time
@@ -43,208 +134,49 @@
  *           type: string
  *           format: date-time
  *           description: End time for pickup window
+ *         images:
+ *           type: array
+ *           items:
+ *             type: string
+ *           description: Array of image URLs
  *         status:
  *           type: string
  *           enum: [AVAILABLE, UNAVAILABLE, SOLD]
+ *           default: AVAILABLE
  *           description: Current status of the listing
- *         images:
- *           type: array
- *           items:
- *             type: string
- *           description: Array of image URLs for the food item
- *         created_at:
- *           type: string
- *           format: date-time
- *         updated_at:
- *           type: string
- *           format: date-time
  *         is_halal:
  *           type: boolean
- *           description: Indicates if the food item is halal
+ *           default: false
+ *           description: Whether the food is halal certified
  *         preparation_time:
  *           type: string
- *           nullable: true
- *           description: Time required for preparation
+ *           description: Time needed for preparation
  *         storage_instructions:
  *           type: string
- *           nullable: true
- *           description: Instructions for proper storage
- *         pickup_status:
- *           type: string
- *           enum: [expired, urgent, warning, normal]
- *           description: Current pickup urgency status
- *         business:
- *           $ref: '#/components/schemas/Business'
- *         location:
- *           $ref: '#/components/schemas/Location'
- *         categories:
- *           type: array
- *           items:
- *             $ref: '#/components/schemas/Category'
- *         remaining_pickup_hours:
- *           type: number
- *           format: float
- *           description: Hours remaining until pickup deadline
- *         formatted_time:
- *           type: string
- *           description: Human-readable remaining time
- *         is_urgent:
- *           type: boolean
- *           description: Indicates if pickup is urgent
- *
- *     FoodListingUpdate:
- *       type: object
- *       properties:
- *         title:
- *           type: string
- *         description:
- *           type: string
- *         price:
- *           type: number
- *           minimum: 0
- *         original_price:
- *           type: number
- *           minimum: 0
- *         quantity:
- *           type: integer
- *           minimum: 1
- *         unit:
- *           type: string
- *         expiry_date:
- *           type: string
- *           format: date-time
- *         pickup_start:
- *           type: string
- *           format: date-time
- *         pickup_end:
- *           type: string
- *           format: date-time
- *         images:
- *           type: array
- *           items:
- *             type: string
- *         status:
- *           type: string
- *           enum: [AVAILABLE, UNAVAILABLE, SOLD]
- *         is_halal:
- *           type: boolean
- *         preparation_time:
- *           type: string
- *         storage_instructions:
- *           type: string
+ *           description: Instructions for food storage
  *         location_id:
  *           type: string
  *           format: uuid
- *         category_ids:
+ *           description: ID of the business location
+ *         location:
+ *           $ref: '#/components/schemas/Location'
+ *         branch_id:
+ *           type: string
+ *           format: uuid
+ *           description: Optional ID of the business branch
+ *         branch:
+ *           $ref: '#/components/schemas/Branch'
+ *         pickup_status:
+ *           type: string
+ *           enum: [normal, warning, urgent, expired]
+ *           description: Current pickup urgency status
+ *         categories:
  *           type: array
  *           items:
  *             type: string
- *             format: uuid
- *
- *     ListingStats:
- *       type: object
- *       properties:
- *         total_views:
- *           type: integer
- *           description: Total number of views for the listing
- *         total_reservations:
- *           type: integer
- *           description: Total number of reservations made
- *         completion_rate:
- *           type: number
- *           format: float
- *           description: Percentage of successful pickups
- *         average_rating:
- *           type: number
- *           format: float
- *           description: Average rating from reviews
- *
- * tags:
- *   name: Food Listings
- *   description: Food listing management endpoints
+ *           description: Array of category IDs
  *
  * /api/food-listings:
- *   get:
- *     summary: Get all food listings
- *     tags: [Food Listings]
- *     parameters:
- *       - name: page
- *         in: query
- *         schema:
- *           type: integer
- *           minimum: 1
- *           default: 1
- *       - name: limit
- *         in: query
- *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 100
- *           default: 10
- *       - name: search
- *         in: query
- *         schema:
- *           type: string
- *       - name: category
- *         in: query
- *         schema:
- *           type: string
- *       - name: minPrice
- *         in: query
- *         schema:
- *           type: number
- *       - name: maxPrice
- *         in: query
- *         schema:
- *           type: number
- *       - name: isHalal
- *         in: query
- *         schema:
- *           type: boolean
- *       - name: status
- *         in: query
- *         schema:
- *           type: string
- *           enum: [AVAILABLE, UNAVAILABLE, SOLD]
- *       - name: businessId
- *         in: query
- *         schema:
- *           type: string
- *           format: uuid
- *       - name: locationId
- *         in: query
- *         schema:
- *           type: string
- *           format: uuid
- *       - name: branchId
- *         in: query
- *         schema:
- *           type: string
- *           format: uuid
- *       - name: prioritizeUrgent
- *         in: query
- *         schema:
- *           type: boolean
- *     responses:
- *       200:
- *         description: List of food listings
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: success
- *                 data:
- *                   type: object
- *                   properties:
- *                     listings:
- *                       type: array
- *                       items:
- *                         $ref: '#/components/schemas/FoodListing'
- *                     pagination:
- *                       $ref: '#/components/schemas/Pagination'
  *   post:
  *     summary: Create a new food listing
  *     tags: [Food Listings]
@@ -266,54 +198,75 @@
  *               - expiry_date
  *               - pickup_start
  *               - pickup_end
+ *               - images
+ *               - is_halal
  *               - location_id
- *               - category_ids
  *             properties:
  *               title:
  *                 type: string
+ *                 description: Title of the food listing
  *               description:
  *                 type: string
+ *                 description: Detailed description of the food listing
  *               price:
  *                 type: number
+ *                 format: float
  *                 minimum: 0
+ *                 description: Discounted price of the food listing
  *               original_price:
  *                 type: number
+ *                 format: float
  *                 minimum: 0
+ *                 description: Original price before discount
  *               quantity:
  *                 type: integer
  *                 minimum: 1
+ *                 description: Available quantity
  *               unit:
  *                 type: string
+ *                 description: Unit of measurement (e.g., kg, pieces)
  *               expiry_date:
  *                 type: string
  *                 format: date-time
+ *                 description: Food expiration date and time
  *               pickup_start:
  *                 type: string
  *                 format: date-time
+ *                 description: Start time for pickup window
  *               pickup_end:
  *                 type: string
  *                 format: date-time
+ *                 description: End time for pickup window
  *               images:
  *                 type: array
  *                 items:
  *                   type: string
+ *                 description: Array of image URLs
  *               is_halal:
  *                 type: boolean
+ *                 description: Whether the food is halal certified
  *               preparation_time:
  *                 type: string
+ *                 description: Time needed for preparation (optional)
  *               storage_instructions:
  *                 type: string
+ *                 description: Instructions for food storage (optional)
  *               location_id:
  *                 type: string
  *                 format: uuid
- *               category_ids:
+ *                 description: ID of the business location
+ *               categories:
  *                 type: array
  *                 items:
  *                   type: string
- *                   format: uuid
+ *                 description: Array of category IDs (optional)
+ *               branch_id:
+ *                 type: string
+ *                 format: uuid
+ *                 description: ID of the business branch (optional)
  *     responses:
  *       201:
- *         description: Created food listing
+ *         description: Food listing created successfully
  *         content:
  *           application/json:
  *             schema:
@@ -324,18 +277,119 @@
  *                   example: success
  *                 data:
  *                   $ref: '#/components/schemas/FoodListing'
+ *       400:
+ *         description: Invalid input data
+ *       401:
+ *         description: Unauthorized - Missing or invalid token
+ *       403:
+ *         description: Forbidden - Not a business user
+ *
+ *   get:
+ *     summary: Get all food listings with filters
+ *     tags: [Food Listings]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Number of items per page
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term for title and description
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filter by category ID
+ *       - in: query
+ *         name: minPrice
+ *         schema:
+ *           type: number
+ *         description: Minimum price filter
+ *       - in: query
+ *         name: maxPrice
+ *         schema:
+ *           type: number
+ *         description: Maximum price filter
+ *       - in: query
+ *         name: isHalal
+ *         schema:
+ *           type: boolean
+ *         description: Filter halal items
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [AVAILABLE, UNAVAILABLE, SOLD]
+ *         description: Filter by listing status
+ *       - in: query
+ *         name: businessId
+ *         schema:
+ *           type: string
+ *         description: Filter by business ID
+ *       - in: query
+ *         name: locationId
+ *         schema:
+ *           type: string
+ *         description: Filter by location ID
+ *       - in: query
+ *         name: branchId
+ *         schema:
+ *           type: string
+ *         description: Filter by branch ID
+ *     responses:
+ *       200:
+ *         description: List of food listings
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     listings:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/FoodListing'
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                         page:
+ *                           type: integer
+ *                         limit:
+ *                           type: integer
+ *                         totalPages:
+ *                           type: integer
  *
  * /api/food-listings/{listingId}:
  *   get:
- *     summary: Get a food listing by ID
+ *     summary: Get a specific food listing
  *     tags: [Food Listings]
  *     parameters:
- *       - name: listingId
- *         in: path
+ *       - in: path
+ *         name: listingId
  *         required: true
  *         schema:
  *           type: string
- *           format: uuid
+ *         description: ID of the food listing
  *     responses:
  *       200:
  *         description: Food listing details
@@ -350,7 +404,7 @@
  *                 data:
  *                   $ref: '#/components/schemas/FoodListing'
  *       404:
- *         description: Listing not found
+ *         description: Food listing not found
  *
  *   patch:
  *     summary: Update a food listing
@@ -358,21 +412,21 @@
  *     security:
  *       - BearerAuth: []
  *     parameters:
- *       - name: listingId
- *         in: path
+ *       - in: path
+ *         name: listingId
  *         required: true
  *         schema:
  *           type: string
- *           format: uuid
+ *         description: ID of the food listing
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/FoodListingUpdate'
+ *             $ref: '#/components/schemas/FoodListing'
  *     responses:
  *       200:
- *         description: Updated food listing
+ *         description: Food listing updated successfully
  *         content:
  *           application/json:
  *             schema:
@@ -385,8 +439,12 @@
  *                   $ref: '#/components/schemas/FoodListing'
  *       400:
  *         description: Invalid input data
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Not the owner of the listing
  *       404:
- *         description: Listing not found
+ *         description: Food listing not found
  *
  *   delete:
  *     summary: Delete a food listing
@@ -394,50 +452,55 @@
  *     security:
  *       - BearerAuth: []
  *     parameters:
- *       - name: listingId
- *         in: path
+ *       - in: path
+ *         name: listingId
  *         required: true
  *         schema:
  *           type: string
- *           format: uuid
+ *         description: ID of the food listing
  *     responses:
  *       204:
- *         description: Listing deleted successfully
- *       400:
- *         description: Cannot delete listing with active reservations
+ *         description: Food listing deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Not the owner of the listing
  *       404:
- *         description: Listing not found
+ *         description: Food listing not found
  *
  * /api/food-listings/business/listings:
  *   get:
- *     summary: Get business food listings
+ *     summary: Get all listings for the authenticated business
  *     tags: [Food Listings]
  *     security:
  *       - BearerAuth: []
  *     parameters:
- *       - name: page
- *         in: query
+ *       - in: query
+ *         name: page
  *         schema:
  *           type: integer
  *           minimum: 1
  *           default: 1
- *       - name: limit
- *         in: query
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
  *         schema:
  *           type: integer
  *           minimum: 1
  *           maximum: 100
  *           default: 10
- *       - name: status
- *         in: query
+ *         description: Number of items per page
+ *       - in: query
+ *         name: status
  *         schema:
  *           type: string
  *           enum: [AVAILABLE, UNAVAILABLE, SOLD]
- *       - name: branchId
- *         in: query
+ *         description: Filter by listing status
+ *       - in: query
+ *         name: branchId
  *         schema:
  *           type: string
- *           format: uuid
+ *         description: Filter by branch ID
  *     responses:
  *       200:
  *         description: List of business food listings
@@ -460,7 +523,27 @@
  *                           - type: object
  *                             properties:
  *                               stats:
- *                                 $ref: '#/components/schemas/ListingStats'
+ *                                 type: object
+ *                                 properties:
+ *                                   active_reservations:
+ *                                     type: integer
+ *                                   branch_name:
+ *                                     type: string
+ *                                   branch_status:
+ *                                     type: string
  *                     pagination:
- *                       $ref: '#/components/schemas/Pagination'
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                         page:
+ *                           type: integer
+ *                         limit:
+ *                           type: integer
+ *                         totalPages:
+ *                           type: integer
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Not a business user
  */

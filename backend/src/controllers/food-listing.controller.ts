@@ -199,8 +199,8 @@ export class FoodListingController {
       .isString()
       .notEmpty()
       .withMessage("Location ID is required"),
-    body("category_ids").isArray().withMessage("Category IDs must be an array"),
-    body("category_ids.*")
+    body("categories").isArray().withMessage("Category IDs must be an array"),
+    body("categories.*")
       .isString()
       .withMessage("Each category ID must be a string"),
     body("branch_id")
@@ -263,11 +263,11 @@ export class FoodListingController {
       .optional()
       .isString()
       .withMessage("Location ID must be a string"),
-    body("category_ids")
+    body("categories")
       .optional()
       .isArray()
       .withMessage("Category IDs must be an array"),
-    body("category_ids.*")
+    body("categories.*")
       .optional()
       .isString()
       .withMessage("Each category ID must be a string"),

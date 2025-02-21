@@ -29,8 +29,8 @@ export class FoodListingService {
       preparation_time?: string;
       storage_instructions?: string;
       location_id: string;
-      category_ids: string[];
-      branch_id?: string; // New field for branch
+      categories: string[];
+      branch_id: string;
     }
   ) {
     // Verify business ownership of location
@@ -45,43 +45,62 @@ export class FoodListingService {
       throw new AppError("Invalid location", 400);
     }
 
-    // If branch_id is provided, verify it belongs to the business
-    if (data.branch_id) {
-      const branch = await prisma.branch.findFirst({
-        where: {
-          id: data.branch_id,
+    // Verify business ownership of location
+    const branch = await prisma.branch.findFirst({
+      where: {
+        id: data.branch_id,
+        business_id: businessId,
+      },
+    });
+
+    if (!branch) {
+      throw new AppError("Invalid Branch", 400);
+    }
+
+    // Create listing with categories in a transaction
+    const listing = await prisma.$transaction(async (tx) => {
+      // First create the listing
+      const newListing = await tx.foodListing.create({
+        data: {
           business_id: businessId,
+          title: data.title,
+          description: data.description,
+          price: data.price,
+          original_price: data.original_price,
+          quantity: data.quantity,
+          unit: data.unit,
+          expiry_date: data.expiry_date,
+          pickup_start: data.pickup_start,
+          pickup_end: data.pickup_end,
+          images: data.images,
+          is_halal: data.is_halal,
+          preparation_time: data.preparation_time,
+          storage_instructions: data.storage_instructions,
           location_id: data.location_id,
-          status: "ACTIVE",
+          branch_id: data.branch_id,
+          categories: {
+            create: data.categories.map((categoryId) => ({
+              category: {
+                connect: {
+                  id: categoryId,
+                },
+              },
+            })),
+          },
+        },
+        include: {
+          business: true,
+          location: true,
+          branch: true,
+          categories: {
+            include: {
+              category: true,
+            },
+          },
         },
       });
 
-      if (!branch) {
-        throw new AppError("Invalid or inactive branch", 400);
-      }
-    }
-
-    // Create listing with categories and branch
-    const listing = await prisma.foodListing.create({
-      data: {
-        ...data,
-        business_id: businessId,
-        categories: {
-          create: data.category_ids.map((categoryId) => ({
-            category_id: categoryId,
-          })),
-        },
-      },
-      include: {
-        business: true,
-        location: true,
-        branch: true, // Include branch in response
-        categories: {
-          include: {
-            category: true,
-          },
-        },
-      },
+      return newListing;
     });
 
     return listing;
@@ -106,7 +125,7 @@ export class FoodListingService {
       preparation_time?: string;
       storage_instructions?: string;
       location_id?: string;
-      category_ids?: string[];
+      categories?: string[];
       branch_id?: string; // New field for branch
     }
   ) {
@@ -154,7 +173,7 @@ export class FoodListingService {
 
     // Update listing
     const updateData: any = { ...data };
-    delete updateData.category_ids;
+    delete updateData.categories;
 
     // Start transaction for updating listing and categories
     const updatedListing = await prisma.$transaction(async (prisma) => {
@@ -164,8 +183,8 @@ export class FoodListingService {
         data: updateData,
       });
 
-      // If category_ids provided, update categories
-      if (data.category_ids) {
+      // If categories provided, update categories
+      if (data.categories) {
         // Delete existing categories
         await prisma.listingCategory.deleteMany({
           where: { listing_id: listingId },
@@ -173,7 +192,7 @@ export class FoodListingService {
 
         // Create new categories
         await prisma.listingCategory.createMany({
-          data: data.category_ids.map((categoryId) => ({
+          data: data.categories.map((categoryId) => ({
             listing_id: listingId,
             category_id: categoryId,
           })),
@@ -192,7 +211,7 @@ export class FoodListingService {
       include: {
         business: true,
         location: true,
-        branch: true, // Include branch in response
+        branch: true,
         categories: {
           include: {
             category: true,
@@ -232,7 +251,7 @@ export class FoodListingService {
     status?: string;
     businessId?: string;
     locationId?: string;
-    branchId?: string; // New query parameter
+    branchId?: string;
     prioritizeUrgent?: boolean;
   }) {
     const page = query.page || 1;
@@ -273,7 +292,7 @@ export class FoodListingService {
         include: {
           business: true,
           location: true,
-          branch: true, // Include branch in response
+          branch: true,
           categories: {
             include: {
               category: true,
