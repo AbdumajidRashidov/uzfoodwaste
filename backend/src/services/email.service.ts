@@ -4,6 +4,12 @@ import { config } from "../config/environment";
 import { AppError } from "../middlewares/error.middleware";
 type MessageType = "INFO" | "SUCCESS" | "WARNING" | "ERROR";
 
+export interface PasswordResetNotificationData {
+  name: string;
+  email: string;
+  newPassword: string;
+}
+
 interface EmailConfig {
   to: string;
   subject: string;
@@ -78,6 +84,14 @@ const typeColors: Record<MessageType, string> = {
   ERROR: "#b91c1c",
 };
 
+interface WelcomeEmailData {
+  name: string;
+  email: string;
+  password: string;
+  branchName: string;
+  businessName: string;
+}
+
 export class EmailService {
   private transporter: nodemailer.Transporter;
   private readonly MAX_RETRIES = 3;
@@ -126,15 +140,6 @@ export class EmailService {
       console.error("Email sending failed after retries:", error);
       throw new AppError("Failed to send email", 500);
     }
-  }
-
-  private getFormattedLocation(
-    address: string,
-    branchInfo?: { name: string; branch_code: string }
-  ): string {
-    return branchInfo
-      ? `${branchInfo.name} (${branchInfo.branch_code}) - ${address}`
-      : address;
   }
 
   private getReservationCreatedTemplate(
@@ -459,6 +464,80 @@ export class EmailService {
     data: NotificationEmailData
   ): Promise<void> {
     const template = this.getNotificationTemplate(data);
+    await this.sendEmailWithRetry({ to, ...template });
+  }
+  async sendWelcomeEmail(to: string, data: WelcomeEmailData): Promise<void> {
+    const template = {
+      subject: `Welcome to ${data.businessName} - Branch Manager Access`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h1 style="color: #333; text-align: center;">Welcome to ${data.businessName}</h1>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p>Dear ${data.name},</p>
+            
+            <p>You have been appointed as the Branch Manager for ${data.branchName}. Your account has been created with the following credentials:</p>
+            
+            <div style="background-color: #fff; padding: 15px; border-radius: 4px; margin: 20px 0;">
+              <p><strong>Email:</strong> ${data.email}</p>
+              <p><strong>Temporary Password:</strong> ${data.password}</p>
+            </div>
+            
+            <p style="color: #dc3545;">Please change your password immediately after your first login.</p>
+            
+            <div style="margin-top: 20px;">
+              <p>As a Branch Manager, you can:</p>
+              <ul>
+                <li>Manage food listings for your branch</li>
+                <li>Handle reservations and pickups</li>
+                <li>View branch analytics</li>
+                <li>Manage branch operating hours</li>
+              </ul>
+            </div>
+          </div>
+          
+          <div style="text-align: center; margin-top: 20px; color: #666;">
+            <p>Need help? Contact our support team</p>
+          </div>
+        </div>
+      `,
+    };
+
+    await this.sendEmailWithRetry({ to, ...template });
+  }
+
+  async sendPasswordResetNotification(
+    to: string,
+    data: PasswordResetNotificationData
+  ): Promise<void> {
+    const template = {
+      subject: "Your Password Has Been Reset",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h1 style="color: #333; text-align: center;">Password Reset Notification</h1>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p>Dear ${data.name},</p>
+            
+            <p>Your account password has been reset. Here are your new login credentials:</p>
+            
+            <div style="background-color: #fff; padding: 15px; border-radius: 4px; margin: 20px 0;">
+              <p><strong>Email:</strong> ${data.email}</p>
+              <p><strong>New Password:</strong> ${data.newPassword}</p>
+            </div>
+            
+            <p style="color: #dc3545; font-weight: bold;">
+              Please change your password immediately after logging in for security purposes.
+            </p>
+          </div>
+          
+          <div style="text-align: center; margin-top: 20px; color: #666;">
+            <p>If you did not request this password reset, please contact support immediately.</p>
+          </div>
+        </div>
+      `,
+    };
+
     await this.sendEmailWithRetry({ to, ...template });
   }
 }

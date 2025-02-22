@@ -7,6 +7,9 @@ import { AppError } from "../middlewares/error.middleware";
 const branchService = new BranchService();
 
 export class BranchController {
+  /**
+   * Create a new branch
+   */
   async createBranch(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const businessId = req.user?.business?.id;
@@ -25,6 +28,9 @@ export class BranchController {
     }
   }
 
+  /**
+   * Update an existing branch
+   */
   async updateBranch(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const businessId = req.user?.business?.id;
@@ -48,6 +54,9 @@ export class BranchController {
     }
   }
 
+  /**
+   * Get a single branch by ID
+   */
   async getBranch(req: Request, res: Response, next: NextFunction) {
     try {
       const { branchId } = req.params;
@@ -62,6 +71,9 @@ export class BranchController {
     }
   }
 
+  /**
+   * Get all branches for a business with filtering and pagination
+   */
   async getBusinessBranches(
     req: AuthRequest,
     res: Response,
@@ -96,6 +108,9 @@ export class BranchController {
     }
   }
 
+  /**
+   * Create a review for a branch
+   */
   async createBranchReview(
     req: AuthRequest,
     res: Response,
@@ -123,6 +138,9 @@ export class BranchController {
     }
   }
 
+  /**
+   * Get reviews for a branch with filtering and pagination
+   */
   async getBranchReviews(req: Request, res: Response, next: NextFunction) {
     try {
       const { branchId } = req.params;
@@ -147,6 +165,9 @@ export class BranchController {
     }
   }
 
+  /**
+   * Get analytics for a branch with optional time period filtering
+   */
   async getBranchAnalytics(
     req: AuthRequest,
     res: Response,

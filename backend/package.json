@@ -5,7 +5,7 @@
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "dev": "nodemon",
-        "build": "prisma migrate resolve --rolled-back '20250222112416_add_reservaation_multiple_items' && prisma migrate resolve --applied '20250222112416_add_reservaation_multiple_items' && prisma migrate status && prisma generate && prisma migrate deploy && tsc",
+        "build": "prisma migrate status && prisma generate && prisma migrate deploy && tsc",
         "start": "node build/server.js",
         "prisma:generate": "prisma generate",
         "prisma:migrate": "prisma migrate deploy",
