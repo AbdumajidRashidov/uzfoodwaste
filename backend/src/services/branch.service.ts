@@ -121,9 +121,7 @@ export class BranchService {
           },
           include: {
             categories: {
-              include: {
-                category: true,
-              },
+              include: {},
             },
           },
         },

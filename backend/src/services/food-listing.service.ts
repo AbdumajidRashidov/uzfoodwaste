@@ -6,7 +6,6 @@ import {
   formatRemainingTime,
   isPickupUrgent,
   getPickupTimeStatus,
-  isPickupExpired,
 } from "../utils/time.util";
 
 const prisma = new PrismaClient();
@@ -261,9 +260,9 @@ export class FoodListingService {
     // Build where clause
     const where: any = {
       status: query.status || "AVAILABLE",
-      // pickup_status: { not: "expired" },
     };
 
+    // Search filter
     if (query.search) {
       where.OR = [
         { title: { contains: query.search, mode: "insensitive" } },
@@ -271,6 +270,23 @@ export class FoodListingService {
       ];
     }
 
+    // Price range filter
+    if (query.minPrice !== undefined || query.maxPrice !== undefined) {
+      where.price = {};
+      if (query.minPrice !== undefined) {
+        where.price.gte = query.minPrice;
+      }
+      if (query.maxPrice !== undefined) {
+        where.price.lte = query.maxPrice;
+      }
+    }
+
+    // Halal status filter
+    if (query.isHalal !== undefined) {
+      where.is_halal = query.isHalal;
+    }
+
+    // Business, location, and branch filters
     if (query.businessId) {
       where.business_id = query.businessId;
     }
@@ -283,7 +299,36 @@ export class FoodListingService {
       where.branch_id = query.branchId;
     }
 
-    // Add other existing filters...
+    // Category filter
+    if (query.category) {
+      where.categories = {
+        some: {
+          category_id: query.category,
+        },
+      };
+    }
+
+    // Define the order by clause
+    let orderBy: any[] = [];
+
+    // Prioritize urgent listings if requested
+    if (query.prioritizeUrgent) {
+      orderBy.push(
+        {
+          pickup_status: {
+            // Order by pickup status with "urgent" first
+            equals: "urgent",
+            sort: "asc",
+          },
+        },
+        {
+          pickup_end: "asc", // Then by closest pickup deadline
+        }
+      );
+    }
+
+    // Always add created_at as the final sorting criteria
+    orderBy.push({ created_at: "desc" });
 
     const [total, listings] = await Promise.all([
       prisma.foodListing.count({ where }),
@@ -301,9 +346,7 @@ export class FoodListingService {
         },
         skip,
         take: limit,
-        orderBy: {
-          created_at: "desc",
-        },
+        orderBy,
       }),
     ]);
 
