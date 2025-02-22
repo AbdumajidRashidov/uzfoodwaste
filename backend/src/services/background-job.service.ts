@@ -1,5 +1,5 @@
 // src/services/background-job.service.ts
-import Bull, { Queue, Job } from "bull";
+import Bull, { Queue, Job, JobOptions } from "bull";
 import { PrismaClient } from "@prisma/client";
 import { getPickupTimeStatus } from "../utils/time.util";
 import { config } from "../config/environment";
@@ -10,6 +10,12 @@ export class BackgroundJobService {
   private statusUpdateQueue: Queue;
 
   constructor() {
+    // Define default job options
+    const defaultJobOptions: JobOptions = {
+      removeOnComplete: true, // Remove jobs from queue once completed
+      attempts: 3, // Retry failed jobs up to 3 times
+    };
+
     // Initialize Bull queue with Redis connection
     this.statusUpdateQueue = new Bull("pickup-status-updates", {
       redis: {
@@ -18,10 +24,7 @@ export class BackgroundJobService {
         port: config.redis.port,
         password: config.redis.password,
       },
-      defaultJobOptions: {
-        removeOnComplete: true, // Remove jobs from queue once completed
-        attempts: 3, // Retry failed jobs up to 3 times
-      },
+      defaultJobOptions: defaultJobOptions, // Apply default job options
     });
 
     // Set up queue processors

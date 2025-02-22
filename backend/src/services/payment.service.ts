@@ -14,14 +14,17 @@ export class PaymentService {
       payment_method: string;
     }
   ) {
-    // Validate reservation exists and is in PENDING state
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
       include: {
-        listing: {
+        reservation_items: {
           include: {
-            business: true,
-            location: true,
+            listing: {
+              include: {
+                business: true,
+                location: true,
+              },
+            },
           },
         },
         customer: {
@@ -49,22 +52,28 @@ export class PaymentService {
       );
     }
 
-    // Check if payment already exists
     if (
       reservation.payment_transactions.some((pt) => pt.status === "COMPLETED")
     ) {
       throw new AppError("Payment already processed for this reservation", 400);
     }
 
-    // Validate payment amount matches listing price
-    if (data.amount !== Number(reservation.listing.price)) {
-      throw new AppError("Payment amount does not match listing price", 400);
+    // Calculate total amount from all items
+    const totalAmount = reservation.reservation_items.reduce(
+      (sum, item) => sum + Number(item.price) * item.quantity,
+      0
+    );
+
+    // Validate payment amount
+    if (data.amount !== totalAmount) {
+      throw new AppError(
+        "Payment amount does not match total reservation price",
+        400
+      );
     }
 
-    // Generate unique transaction ID
     const transactionId = crypto.randomBytes(16).toString("hex");
 
-    // Start transaction
     const result = await prisma.$transaction(async (prisma) => {
       // Create payment transaction
       const payment = await prisma.paymentTransaction.create({
@@ -78,17 +87,21 @@ export class PaymentService {
         },
       });
 
-      // Update reservation status to CONFIRMED
+      // Update reservation status
       const updatedReservation = await prisma.reservation.update({
         where: { id: reservationId },
         data: {
           status: "CONFIRMED",
         },
         include: {
-          listing: {
+          reservation_items: {
             include: {
-              business: true,
-              location: true,
+              listing: {
+                include: {
+                  business: true,
+                  location: true,
+                },
+              },
             },
           },
           customer: {
@@ -112,16 +125,35 @@ export class PaymentService {
   }
 
   async getPaymentStatus(reservationId: string) {
-    const payment = await prisma.paymentTransaction.findFirst({
-      where: {
-        reservation_id: reservationId,
-        status: "COMPLETED",
-      },
-    });
+    const [payment, reservation] = await Promise.all([
+      prisma.paymentTransaction.findFirst({
+        where: {
+          reservation_id: reservationId,
+          status: "COMPLETED",
+        },
+      }),
+      prisma.reservation.findUnique({
+        where: { id: reservationId },
+        include: {
+          reservation_items: {
+            select: {
+              price: true,
+              quantity: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const totalAmount = reservation?.reservation_items.reduce(
+      (sum, item) => sum + Number(item.price) * item.quantity,
+      0
+    );
 
     return {
       is_paid: !!payment,
-      payment: payment,
+      payment,
+      total_amount: totalAmount,
     };
   }
 }

@@ -8,22 +8,29 @@ const prisma = new PrismaClient();
 
 export class QRCodeService {
   private generateConfirmationCode(reservationId: string): string {
-    // Generate a unique confirmation code using reservation ID and timestamp
     const timestamp = Date.now().toString();
     const hash = crypto
       .createHash("sha256")
       .update(`${reservationId}-${timestamp}`)
       .digest("hex");
-
-    // Return first 8 characters as confirmation code
     return hash.substring(0, 8).toUpperCase();
   }
 
   async generateReservationQR(reservationId: string) {
-    // Check if reservation exists and is confirmed
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
       include: {
+        reservation_items: {
+          include: {
+            listing: {
+              include: {
+                business: true,
+                location: true,
+                branch: true,
+              },
+            },
+          },
+        },
         payment_transactions: {
           where: { status: "COMPLETED" },
         },
@@ -48,7 +55,6 @@ export class QRCodeService {
       );
     }
 
-    // Generate confirmation code if not exists
     let confirmationCode = reservation.confirmation_code;
     if (!confirmationCode) {
       confirmationCode = this.generateConfirmationCode(reservationId);
@@ -58,27 +64,33 @@ export class QRCodeService {
       });
     }
 
-    // Generate QR code data
     const qrData = {
       reservation_id: reservationId,
       confirmation_code: confirmationCode,
+      items: reservation.reservation_items.map((item) => ({
+        id: item.id,
+        title: item.listing.title,
+        business_id: item.listing.business_id,
+        quantity: item.quantity,
+      })),
       timestamp: Date.now(),
     };
 
-    // Convert to QR code
     const qrCode = await QRCode.toDataURL(JSON.stringify(qrData));
-
-    return {
-      qr_code: qrCode,
-      confirmation_code: confirmationCode,
-    };
+    return { qr_code: qrCode, confirmation_code: confirmationCode };
   }
 
   async verifyConfirmationCode(reservationId: string, code: string) {
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
       include: {
-        listing: true,
+        reservation_items: {
+          include: {
+            listing: {
+              include: { business: true },
+            },
+          },
+        },
         customer: {
           include: {
             user: {

@@ -154,14 +154,14 @@ export class CustomerService {
     return await prisma.reservation.findMany({
       where,
       include: {
-        listing: {
+        FoodListing: {
           include: {
             business: true,
             location: true,
           },
         },
         payment_transactions: true,
-        review: true,
+        reviews: true,
       },
       orderBy: {
         created_at: "desc",

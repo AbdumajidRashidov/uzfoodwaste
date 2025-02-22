@@ -7,9 +7,6 @@ import { AppError } from "../middlewares/error.middleware";
 const reservationService = new ReservationService();
 
 export class ReservationController {
-  /**
-   * Create a new reservation
-   */
   async createReservation(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const customerId = req.user?.customer?.id;
@@ -30,17 +27,9 @@ export class ReservationController {
     }
   }
 
-  /**
-   * Process payment for a reservation and generate QR code
-   */
   async processPayment(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { reservationId } = req.params;
-      const customerId = req.user?.customer?.id;
-      if (!customerId) {
-        throw new AppError("Customer ID not found", 400);
-      }
-
       const result = await reservationService.processPaymentAndGenerateQR(
         reservationId,
         req.body
@@ -55,37 +44,6 @@ export class ReservationController {
     }
   }
 
-  /**
-   * Get QR code for a confirmed reservation
-   */
-  async getQRCode(req: AuthRequest, res: Response, next: NextFunction) {
-    try {
-      const { reservationId } = req.params;
-      const userId = req.user?.customer?.id || req.user?.business?.id;
-      const userRole = req.user?.role;
-
-      if (!userId || !userRole) {
-        throw new AppError("User authentication required", 401);
-      }
-
-      const qrData = await reservationService.getReservationQR(
-        reservationId,
-        userId,
-        userRole
-      );
-
-      res.status(200).json({
-        status: "success",
-        data: qrData,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * Verify pickup using confirmation code
-   */
   async verifyPickup(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { reservationId } = req.params;
@@ -111,9 +69,6 @@ export class ReservationController {
     }
   }
 
-  /**
-   * Get reservation status including payment and pickup details
-   */
   async getReservationStatus(
     req: AuthRequest,
     res: Response,
@@ -143,42 +98,93 @@ export class ReservationController {
     }
   }
 
-  /**
-   * Update reservation status (cancel, confirm, complete)
-   */
-  async updateReservationStatus(
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction
-  ) {
+  async getReservationQR(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { reservationId } = req.params;
-      const actorId = req.user?.customer?.id || req.user?.business?.id;
-      const actorRole = req.user?.role as "CUSTOMER" | "BUSINESS";
+      const userId = req.user?.customer?.id || req.user?.business?.id;
+      const userRole = req.user?.role;
 
-      if (!actorId) {
+      if (!userId || !userRole) {
         throw new AppError("User authentication required", 401);
       }
 
-      const reservation = await reservationService.updateReservationStatus(
+      const qrData = await reservationService.getReservationQR(
         reservationId,
-        req.body,
-        actorId,
-        actorRole
+        userId,
+        userRole
       );
 
       res.status(200).json({
         status: "success",
-        data: reservation,
+        data: qrData,
       });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * Get detailed reservation information
-   */
+  async getCustomerReservations(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const customerId = req.user?.customer?.id;
+      if (!customerId) {
+        throw new AppError("Customer authentication required", 401);
+      }
+
+      const queryOptions = {
+        ...req.query,
+        page: req.query.page ? Number(req.query.page) : undefined,
+        limit: req.query.limit ? Number(req.query.limit) : undefined,
+        from_date: req.query.from_date
+          ? new Date(req.query.from_date as string)
+          : undefined,
+        to_date: req.query.to_date
+          ? new Date(req.query.to_date as string)
+          : undefined,
+      };
+
+      const result = await reservationService.getCustomerReservations(
+        customerId,
+        queryOptions
+      );
+
+      res.status(200).json({
+        status: "success",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getBusinessReservations(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const businessId = req.user?.business?.id;
+      if (!businessId) {
+        throw new AppError("Business authentication required", 401);
+      }
+
+      const result = await reservationService.getBusinessReservations(
+        businessId,
+        req.query
+      );
+
+      res.status(200).json({
+        status: "success",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getReservation(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { reservationId } = req.params;
@@ -198,90 +204,6 @@ export class ReservationController {
       res.status(200).json({
         status: "success",
         data: reservation,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * Get all reservations for a business
-   */
-  async getBusinessReservations(
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction
-  ) {
-    try {
-      const businessId = req.user?.business?.id;
-      if (!businessId) {
-        throw new AppError("Business authentication required", 401);
-      }
-
-      const query = {
-        page: req.query.page ? parseInt(req.query.page as string) : undefined,
-        limit: req.query.limit
-          ? parseInt(req.query.limit as string)
-          : undefined,
-        status: req.query.status as string | undefined,
-        from_date: req.query.from_date
-          ? new Date(req.query.from_date as string)
-          : undefined,
-        to_date: req.query.to_date
-          ? new Date(req.query.to_date as string)
-          : undefined,
-      };
-
-      const result = await reservationService.getBusinessReservations(
-        businessId,
-        query
-      );
-
-      res.status(200).json({
-        status: "success",
-        data: result,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * Get customer's reservations
-   */
-  async getCustomerReservations(
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction
-  ) {
-    try {
-      const customerId = req.user?.customer?.id;
-      if (!customerId) {
-        throw new AppError("Customer authentication required", 401);
-      }
-
-      const query = {
-        page: req.query.page ? parseInt(req.query.page as string) : undefined,
-        limit: req.query.limit
-          ? parseInt(req.query.limit as string)
-          : undefined,
-        status: req.query.status as string | undefined,
-        from_date: req.query.from_date
-          ? new Date(req.query.from_date as string)
-          : undefined,
-        to_date: req.query.to_date
-          ? new Date(req.query.to_date as string)
-          : undefined,
-      };
-
-      const result = await reservationService.getCustomerReservations(
-        customerId,
-        query
-      );
-
-      res.status(200).json({
-        status: "success",
-        data: result,
       });
     } catch (error) {
       next(error);

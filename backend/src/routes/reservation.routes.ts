@@ -11,17 +11,14 @@ const reservationController = new ReservationController();
 // All routes require authentication
 router.use(protect);
 
-/**
- * Create a new reservation (Customer Only)
- */
+// Create reservation (Customer only)
 router.post(
   "/",
   authorize("CUSTOMER"),
   [
-    body("listing_id")
-      .isString()
-      .notEmpty()
-      .withMessage("Listing ID is required"),
+    body("items").isArray().notEmpty().withMessage("Items array is required"),
+    body("items.*.listing_id").isString().notEmpty(),
+    body("items.*.quantity").isInt({ min: 1 }),
     body("pickup_time")
       .isISO8601()
       .withMessage("Valid pickup time is required"),
@@ -30,127 +27,73 @@ router.post(
   reservationController.createReservation
 );
 
-/**
- * Process payment and generate QR code (Customer Only)
- */
+// Process payment
 router.post(
   "/:reservationId/payment",
   authorize("CUSTOMER"),
   [
-    body("amount").isFloat({ min: 0 }).withMessage("Valid amount is required"),
-    body("currency").isString().notEmpty().withMessage("Currency is required"),
-    body("payment_method")
-      .isString()
-      .notEmpty()
-      .withMessage("Payment method is required"),
+    body("amount").isFloat({ min: 0 }),
+    body("currency").isString().notEmpty(),
+    body("payment_method").isString().notEmpty(),
   ],
   validate,
   reservationController.processPayment
 );
 
-/**
- * Get QR code for a reservation (Both Customer and Business)
- */
-router.get("/:reservationId/qr", reservationController.getQRCode);
-
-/**
- * Verify pickup using QR code (Business Only)
- */
+// Verify pickup
 router.post(
   "/:reservationId/verify",
   authorize("BUSINESS"),
-  [
-    body("confirmation_code")
-      .isString()
-      .notEmpty()
-      .withMessage("Confirmation code is required"),
-  ],
+  [body("confirmation_code").isString().notEmpty()],
   validate,
   reservationController.verifyPickup
 );
 
-/**
- * Get reservation status (Both Customer and Business)
- */
+// Get reservation QR code
+router.get("/:reservationId/qr", reservationController.getReservationQR);
+
+// Get reservation status
 router.get(
   "/:reservationId/status",
   reservationController.getReservationStatus
 );
 
-/**
- * Update reservation status (Both Customer and Business)
- */
-router.patch(
-  "/:reservationId/status",
-  [
-    body("status")
-      .isIn(["CONFIRMED", "COMPLETED", "CANCELLED"])
-      .withMessage("Invalid status"),
-    body("cancellation_reason")
-      .if(body("status").equals("CANCELLED"))
-      .isString()
-      .notEmpty()
-      .withMessage("Cancellation reason is required when cancelling"),
-  ],
-  validate,
-  reservationController.updateReservationStatus
-);
-
-/**
- * Get single reservation details (Both Customer and Business)
- */
+// Get single reservation
 router.get("/:reservationId", reservationController.getReservation);
 
-/**
- * Get business reservations with filters (Business Only)
- */
+// Get customer reservations
 router.get(
-  "/business/reservations",
-  authorize("BUSINESS"),
-  [
-    query("page")
-      .optional()
-      .isInt({ min: 1 })
-      .withMessage("Page must be a positive integer"),
-    query("limit")
-      .optional()
-      .isInt({ min: 1, max: 100 })
-      .withMessage("Limit must be between 1 and 100"),
-    query("status")
-      .optional()
-      .isIn(["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"])
-      .withMessage("Invalid status"),
-    query("from_date").optional().isISO8601().withMessage("Invalid from date"),
-    query("to_date").optional().isISO8601().withMessage("Invalid to date"),
-  ],
-  validate,
-  reservationController.getBusinessReservations
-);
-
-/**
- * Get customer's reservations with filters (Customer Only)
- */
-router.get(
-  "/customer/reservations",
+  "/customer/list",
   authorize("CUSTOMER"),
   [
-    query("page")
-      .optional()
-      .isInt({ min: 1 })
-      .withMessage("Page must be a positive integer"),
-    query("limit")
-      .optional()
-      .isInt({ min: 1, max: 100 })
-      .withMessage("Limit must be between 1 and 100"),
+    query("page").optional().isInt({ min: 1 }),
+    query("limit").optional().isInt({ min: 1, max: 100 }),
     query("status")
       .optional()
-      .isIn(["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"])
-      .withMessage("Invalid status"),
-    query("from_date").optional().isISO8601().withMessage("Invalid from date"),
-    query("to_date").optional().isISO8601().withMessage("Invalid to date"),
+      .isIn(["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"]),
+    query("from_date").optional().isISO8601(),
+    query("to_date").optional().isISO8601(),
   ],
   validate,
   reservationController.getCustomerReservations
+);
+
+// Get business reservations
+router.get(
+  "/business/list",
+  authorize("BUSINESS"),
+  [
+    query("page").optional().isInt({ min: 1 }),
+    query("limit").optional().isInt({ min: 1, max: 100 }),
+    query("status")
+      .optional()
+      .isIn(["PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"]),
+    query("from_date").optional().isISO8601(),
+    query("to_date").optional().isISO8601(),
+    query("branch_id").optional().isString(),
+  ],
+  validate,
+  reservationController.getBusinessReservations
 );
 
 export default router;

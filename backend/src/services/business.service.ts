@@ -516,7 +516,7 @@ export class BusinessService {
       // Total reservations count
       prisma.reservation.count({
         where: {
-          listing: {
+          FoodListing: {
             business_id: businessId,
           },
         },

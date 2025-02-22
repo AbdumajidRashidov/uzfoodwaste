@@ -1,16 +1,16 @@
+import { NotificationItem } from "./../types/notification.types";
 // src/services/notification.service.ts
-import { PrismaClient, Notification } from "@prisma/client";
+import { PrismaClient, Notification, NotificationType } from "@prisma/client";
+import {
+  CreateNotificationInput,
+  INotification,
+  IUserNotificationPreferences,
+  NotificationQuery,
+} from "../types/notification.types"; // Adjust the import path as necessary
 import { EmailService } from "./email.service";
 import { PushNotificationService } from "./push-notification.service";
 import { SMSNotificationService } from "./sms-notification.service";
 import { AppError } from "../middlewares/error.middleware";
-import {
-  INotification,
-  IUserNotificationPreferences,
-  CreateNotificationInput,
-  UpdatePreferencesInput,
-  NotificationQuery,
-} from "../types/notification.types";
 
 const prisma = new PrismaClient();
 const emailService = new EmailService();
@@ -21,6 +21,34 @@ export class NotificationService {
   async createNotification(
     data: CreateNotificationInput
   ): Promise<INotification> {
+    // Get reservation details for multi-item notifications
+    let itemDetails: any[] = [];
+    if (data.reference_type === "RESERVATION" && data.reference_id) {
+      const reservation = await prisma.reservation.findUnique({
+        where: { id: data.reference_id },
+        include: {
+          reservation_items: {
+            include: {
+              listing: {
+                include: {
+                  business: true,
+                  location: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (reservation) {
+        itemDetails = reservation.reservation_items.map((item) => ({
+          title: item.listing.title || "",
+          business: item.listing.business.company_name || "",
+          quantity: item.quantity || 0,
+        }));
+      }
+    }
+
     const notification = await prisma.notification.create({
       data: {
         ...data,
@@ -37,64 +65,105 @@ export class NotificationService {
       },
     });
 
-    // Get user preferences
     const preferences = await prisma.userNotificationPreferences.findUnique({
       where: { user_id: data.user_id },
     });
 
-    if (!preferences) {
+    if (!preferences?.notification_types.includes(data.type)) {
       return notification;
     }
 
-    // Check if user wants this type of notification
-    if (preferences.notification_types.includes(data.type)) {
-      // Send email notification
-      if (preferences.email_notifications) {
-        await emailService.sendNotificationEmail(notification.user.email, {
-          title: notification.title,
-          message: notification.message,
-          type: "INFO", // or any appropriate type
-          subject: notification.title, // or any appropriate subject
-          body: notification.message, // or any appropriate body
-          recipientEmail: notification.user.email,
-          timestamp: new Date(), // or any appropriate timestamp
-        });
-      }
+    // Enhanced notification message for multiple items
+    const enhancedMessage =
+      itemDetails.length > 0
+        ? `${data.message}\n\nItems:\n${itemDetails
+            .map(
+              (item) =>
+                `- ${item.title} (x${item.quantity}) from ${item.business}`
+            )
+            .join("\n")}`
+        : data.message;
 
-      // Send push notification
-      if (preferences.push_notifications) {
-        await pushNotificationService.sendPushNotification(data.user_id, {
-          title: notification.title,
-          body: notification.message,
-          data: {
-            type: notification.type,
-            reference_id: notification.reference_id || "",
-            reference_type: notification.reference_type || "",
-          },
-        });
-      }
-
-      // Send SMS notification
-      if (preferences.sms_notifications && notification.user.phone) {
-        await smsNotificationService.sendSMS(
-          data.user_id,
-          `${notification.title}: ${notification.message}`
-        );
-      }
-    }
+    // Send notifications based on preferences
+    await this.sendNotifications({
+      preferences,
+      notification: {
+        ...notification,
+        message: enhancedMessage,
+      },
+      itemDetails,
+    });
 
     return notification;
   }
 
+  async sendNotifications({
+    preferences,
+    notification,
+    itemDetails,
+  }: {
+    preferences: IUserNotificationPreferences;
+    notification: Notification & {
+      user: { email: string; phone: string };
+    };
+    itemDetails: NotificationItem[];
+  }) {
+    const notificationPromises = [];
+
+    if (preferences.email_notifications) {
+      interface NotificationEmailData {
+        title: string;
+        message: string;
+        type: string;
+        timestamp: Date;
+        items?: NotificationItem[]; // Add this line
+      }
+    }
+
+    if (preferences.push_notifications) {
+      const pushData: any = {
+        title: notification.title,
+        body: notification.message,
+        data: {
+          type: notification.type,
+          reference_id: notification.reference_id || "",
+          reference_type: notification.reference_type || "",
+        },
+      };
+
+      if (itemDetails.length > 0) {
+        pushData.data.items = itemDetails;
+      }
+
+      notificationPromises.push(
+        pushNotificationService.sendPushNotification(
+          notification.user_id,
+          pushData
+        )
+      );
+    }
+
+    if (preferences.sms_notifications && notification.user.phone) {
+      const smsMessage =
+        itemDetails.length > 0
+          ? `${notification.title}: ${notification.message} (${itemDetails.length} items)`
+          : `${notification.title}: ${notification.message}`;
+
+      notificationPromises.push(
+        smsNotificationService.sendSMS(notification.user_id, smsMessage)
+      );
+    }
+
+    await Promise.all(notificationPromises);
+  }
+
+  // Rest of the service methods remain the same
   async markAsRead(
     notificationId: string,
     userId: string
   ): Promise<INotification> {
     const notification = await prisma.notification.findFirst({
-      where: {
-        id: notificationId,
-        user_id: userId,
-      },
+      where: { id: notificationId, user_id: userId },
     });
 
     if (!notification) {
@@ -130,6 +199,14 @@ export class NotificationService {
       prisma.notification.count({ where }),
       prisma.notification.findMany({
         where,
+        include: {
+          user: {
+            select: {
+              email: true,
+              phone: true,
+            },
+          },
+        },
         skip,
         take: limit,
         orderBy: { created_at: "desc" },
@@ -149,23 +226,30 @@ export class NotificationService {
 
   async updateUserPreferences(
     userId: string,
-    preferences: UpdatePreferencesInput
+    preferences: IUserNotificationPreferences
   ): Promise<IUserNotificationPreferences> {
-    return await prisma.userNotificationPreferences.upsert({
+    const updatedPreferences = await prisma.userNotificationPreferences.upsert({
       where: { user_id: userId },
+      update: preferences,
       create: {
-        user_id: userId,
         ...preferences,
       },
-      update: preferences,
     });
+
+    return updatedPreferences;
   }
 
   async getUserPreferences(
     userId: string
   ): Promise<IUserNotificationPreferences | null> {
-    return await prisma.userNotificationPreferences.findUnique({
+    const preferences = await prisma.userNotificationPreferences.findUnique({
       where: { user_id: userId },
     });
+
+    if (!preferences) {
+      throw new AppError("User preferences not found", 404);
+    }
+
+    return preferences;
   }
 }

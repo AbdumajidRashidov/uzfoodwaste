@@ -47,12 +47,16 @@ export type NotificationQuery = {
 
 type MessageType = "INFO" | "SUCCESS" | "WARNING" | "ERROR";
 
+export interface NotificationItem {
+  title: string;
+  business: string;
+  quantity: number;
+}
+
 export interface NotificationEmailData {
+  title: string;
+  message: string;
   type: MessageType;
-  subject: string;
-  body: string;
-  recipientEmail: string;
   timestamp: Date;
-  title?: string; // Make optional with ?
-  message?: string; // Make optional with ?
+  items?: NotificationItem[]; // Made optional for backward compatibility
 }

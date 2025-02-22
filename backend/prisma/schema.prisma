@@ -174,13 +174,14 @@ model FoodListing {
   pickup_status        String   @default("normal") // 'expired', 'urgent', 'warning', 'normal'
 
   // Relations
-  business       Business          @relation(fields: [business_id], references: [id])
-  location       BusinessLocation  @relation(fields: [location_id], references: [id])
-  saved_listings SavedListing[]
-  reservations   Reservation[]
-  reviews        Review[]
-  categories     ListingCategory[]
-  branch         Branch?           @relation(fields: [branch_id], references: [id])
+  business        Business          @relation(fields: [business_id], references: [id])
+  location        BusinessLocation  @relation(fields: [location_id], references: [id])
+  saved_listings  SavedListing[]
+  reservations    Reservation[]
+  reviews         Review[]
+  categories      ListingCategory[]
+  branch          Branch?           @relation(fields: [branch_id], references: [id])
+  ReservationItem ReservationItem[]
 
   @@index([business_id])
   @@index([location_id])
@@ -209,42 +210,58 @@ model SavedListing {
 model Reservation {
   id                  String    @id @default(uuid())
   customer_id         String
-  listing_id          String
   status              String    @default("PENDING") // PENDING, CONFIRMED, COMPLETED, CANCELLED
   created_at          DateTime  @default(now())
   updated_at          DateTime  @updatedAt
-  pickup_time         DateTime
+  pickup_time         DateTime?
   cancellation_reason String?
-  confirmation_code   String? // New field for QR code verification
-  pickup_confirmed_at DateTime? // New field to track actual pickup time
+  confirmation_code   String?
+  pickup_confirmed_at DateTime?
+  total_amount        Decimal   @db.Decimal(10, 2)
 
-  // Relations remain the same
+  // Relations
   customer             Customer             @relation(fields: [customer_id], references: [id])
-  listing              FoodListing          @relation(fields: [listing_id], references: [id])
+  reservation_items    ReservationItem[]
   payment_transactions PaymentTransaction[]
-  review               Review?
+  reviews              Review[]
+  FoodListing          FoodListing?         @relation(fields: [foodListingId], references: [id])
+  foodListingId        String?
 
   @@index([customer_id])
-  @@index([listing_id])
   @@index([status])
+}
+
+model ReservationItem {
+  id             String  @id @default(uuid())
+  reservation_id String
+  listing_id     String
+  quantity       Int     @default(1)
+  price          Decimal @db.Decimal(10, 2)
+
+  // Relations
+  reservation Reservation @relation(fields: [reservation_id], references: [id])
+  listing     FoodListing @relation(fields: [listing_id], references: [id])
+
+  @@index([reservation_id])
+  @@index([listing_id])
 }
 
 model Review {
   id             String   @id @default(uuid())
   customer_id    String
   business_id    String
-  listing_id     String
-  reservation_id String   @unique
+  reservation_id String
+  listing_id     String?
   rating         Int
   comment        String
   created_at     DateTime @default(now())
   images         String[]
 
   // Relations
-  customer    Customer    @relation(fields: [customer_id], references: [id])
-  business    Business    @relation(fields: [business_id], references: [id])
-  listing     FoodListing @relation(fields: [listing_id], references: [id])
-  reservation Reservation @relation(fields: [reservation_id], references: [id])
+  customer    Customer     @relation(fields: [customer_id], references: [id])
+  business    Business     @relation(fields: [business_id], references: [id])
+  listing     FoodListing? @relation(fields: [listing_id], references: [id])
+  reservation Reservation  @relation(fields: [reservation_id], references: [id])
 
   @@index([customer_id])
   @@index([business_id])

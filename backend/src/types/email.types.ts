@@ -1,5 +1,13 @@
 // src/types/email.types.ts
-import { Prisma, Business, BusinessLocation, Branch } from "@prisma/client";
+import {
+  Prisma,
+  Business,
+  BusinessLocation,
+  Branch,
+  Customer,
+  ReservationItem,
+} from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime/library";
 
 export interface ListingWithBranch {
   id: string;
@@ -32,6 +40,14 @@ export interface ReservationEmailData {
   pickup_time: Date;
   pickup_address: string;
   branch_info?: BranchInfo | null;
+  customer: Customer | null;
+  items: {
+    title: string;
+    quantity: number;
+    price: Decimal;
+    business_name: string;
+    pickup_address: string;
+  };
 }
 
 export interface PaymentConfirmationEmailData {
@@ -40,10 +56,14 @@ export interface PaymentConfirmationEmailData {
   confirmationCode: string;
   amount: number;
   currency: string;
-  pickup_address: string;
-  listing_title: string;
-  business_name: string;
   branch_info?: BranchInfo | null;
+  pickup_address: string;
+  business_name: string;
+  items: {
+    title: string;
+    quantity: number;
+    price: Decimal;
+  }[];
 }
 
 export interface ReservationStatusUpdateEmailData {
@@ -53,4 +73,12 @@ export interface ReservationStatusUpdateEmailData {
   cancellation_reason?: string;
   pickup_address: string;
   branch_info?: BranchInfo | null;
+  customer: Customer | null;
+  items?: {
+    title: string;
+    quantity: number;
+    price: Decimal;
+    business_name: string;
+    pickup_address: string;
+  };
 }
