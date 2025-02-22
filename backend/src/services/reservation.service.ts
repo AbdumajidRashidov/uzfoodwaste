@@ -469,7 +469,7 @@ export class ReservationService {
   }
 
   async getCustomerReservations(customerId: string, query: QueryOptions) {
-    const where: any = { customer_id: customerId };
+    const where: any = { customer_id: customerId, quantity: { not: 0 } };
 
     if (query.status) {
       where.status = query.status;
@@ -719,7 +719,12 @@ export class ReservationService {
     actorRole: "CUSTOMER" | "BUSINESS"
   ) {
     const reservation = await prisma.reservation.findUnique({
-      where: { id: reservationId },
+      where: {
+        id: reservationId,
+        listing: {
+          quantity: { not: 0 },
+        },
+      },
       include: {
         listing: {
           include: {
