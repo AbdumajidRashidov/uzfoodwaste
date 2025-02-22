@@ -260,6 +260,7 @@ export class FoodListingService {
     // Build where clause
     const where: any = {
       status: query.status || "AVAILABLE",
+      quantity: { not: 0 },
     };
 
     // Search filter
