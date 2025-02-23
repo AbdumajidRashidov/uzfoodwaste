@@ -45,7 +45,10 @@ export class ReservationService {
         data.items.map((item) =>
           prisma.foodListing.findUnique({
             where: { id: item.listing_id },
-            include: { business: true, location: true },
+            include: {
+              business: true,
+              branch: { include: { location: true } },
+            },
           })
         )
       );
@@ -89,7 +92,11 @@ export class ReservationService {
               listing: {
                 include: {
                   business: true,
-                  location: true,
+                  branch: {
+                    include: {
+                      location: true,
+                    },
+                  },
                 },
               },
             },
@@ -137,7 +144,11 @@ export class ReservationService {
         listing: {
           include: {
             business: true,
-            location: true,
+            branch: {
+              include: {
+                location: true,
+              },
+            },
           },
         },
       },
@@ -156,7 +167,7 @@ export class ReservationService {
           quantity: item.quantity,
           price: item.price,
           business_name: item.listing.business.company_name,
-          pickup_address: item.listing.location.address,
+          pickup_address: item.listing.branch.location.address,
         })),
       }
     );
@@ -181,8 +192,11 @@ export class ReservationService {
             listing: {
               include: {
                 business: true,
-                location: true,
-                branch: true,
+                branch: {
+                  include: {
+                    location: true,
+                  },
+                },
               },
             },
           },
@@ -260,8 +274,11 @@ export class ReservationService {
             listing: {
               include: {
                 business: true,
-                location: true,
-                branch: true,
+                branch: {
+                  include: {
+                    location: true,
+                  },
+                },
               },
             },
           },
@@ -346,8 +363,11 @@ export class ReservationService {
               listing: {
                 include: {
                   business: true,
-                  location: true,
-                  branch: true,
+                  branch: {
+                    include: {
+                      location: true,
+                    },
+                  },
                   categories: {
                     include: { category: true },
                   },
@@ -405,8 +425,11 @@ export class ReservationService {
             listing: {
               include: {
                 business: true,
-                location: true,
-                branch: true,
+                branch: {
+                  include: {
+                    location: true,
+                  },
+                },
               },
             },
           },
@@ -514,8 +537,11 @@ export class ReservationService {
               listing: {
                 include: {
                   business: true,
-                  location: true,
-                  branch: true,
+                  branch: {
+                    include: {
+                      location: true,
+                    },
+                  },
                 },
               },
             },
@@ -568,8 +594,11 @@ export class ReservationService {
             listing: {
               include: {
                 business: true,
-                location: true,
-                branch: true,
+                branch: {
+                  include: {
+                    location: true,
+                  },
+                },
                 categories: {
                   include: { category: true },
                 },

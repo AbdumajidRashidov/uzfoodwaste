@@ -22,7 +22,11 @@ export class PaymentService {
             listing: {
               include: {
                 business: true,
-                location: true,
+                branch: {
+                  include: {
+                    location: true,
+                  },
+                },
               },
             },
           },
@@ -99,7 +103,11 @@ export class PaymentService {
               listing: {
                 include: {
                   business: true,
-                  location: true,
+                  branch: {
+                    include: {
+                      location: true,
+                    },
+                  },
                 },
               },
             },

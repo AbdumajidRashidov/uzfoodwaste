@@ -48,7 +48,11 @@ export class SavedListingService {
         listing: {
           include: {
             business: true,
-            location: true,
+            branch: {
+              include: {
+                location: true,
+              },
+            },
             categories: {
               include: {
                 category: true,
@@ -123,7 +127,11 @@ export class SavedListingService {
         listing: {
           include: {
             business: true,
-            location: true,
+            branch: {
+              include: {
+                location: true,
+              },
+            },
             categories: {
               include: {
                 category: true,
@@ -158,7 +166,11 @@ export class SavedListingService {
           listing: {
             include: {
               business: true,
-              location: true,
+              branch: {
+                include: {
+                  location: true,
+                },
+              },
               categories: {
                 include: {
                   category: true,

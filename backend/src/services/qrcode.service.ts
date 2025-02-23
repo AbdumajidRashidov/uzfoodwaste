@@ -25,8 +25,11 @@ export class QRCodeService {
             listing: {
               include: {
                 business: true,
-                location: true,
-                branch: true,
+                branch: {
+                  include: {
+                    location: true,
+                  },
+                },
               },
             },
           },

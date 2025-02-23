@@ -81,7 +81,11 @@ export class CustomerService {
         listing: {
           include: {
             business: true,
-            location: true,
+            branch: {
+              include: {
+                location: true,
+              },
+            },
             categories: {
               include: {
                 category: true,
@@ -157,7 +161,11 @@ export class CustomerService {
         FoodListing: {
           include: {
             business: true,
-            location: true,
+            branch: {
+              include: {
+                location: true,
+              },
+            },
           },
         },
         payment_transactions: true,

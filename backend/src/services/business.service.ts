@@ -766,7 +766,7 @@ export class BusinessService {
       await prisma.foodListing.updateMany({
         where: { branch_id: branchId },
         data: {
-          branch_id: null,
+          branch_id: undefined,
           status: "UNAVAILABLE",
         },
       });
