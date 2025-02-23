@@ -145,9 +145,8 @@ model BusinessLocation {
   working_hours    String
 
   // Relations
-  business      Business      @relation(fields: [business_id], references: [id])
-  food_listings FoodListing[]
-  branch        Branch?
+  business Business @relation(fields: [business_id], references: [id])
+  branch   Branch?
 }
 
 model FoodListing {
@@ -171,15 +170,13 @@ model FoodListing {
   pickup_status        String   @default("normal") // 'expired', 'urgent', 'warning', 'normal'
 
   // Relations
-  business           Business          @relation(fields: [business_id], references: [id])
-  saved_listings     SavedListing[]
-  reservations       Reservation[]
-  reviews            Review[]
-  categories         ListingCategory[]
-  branch             Branch            @relation(fields: [branch_id], references: [id])
-  ReservationItem    ReservationItem[]
-  BusinessLocation   BusinessLocation? @relation(fields: [businessLocationId], references: [id])
-  businessLocationId String?
+  business        Business          @relation(fields: [business_id], references: [id])
+  saved_listings  SavedListing[]
+  reservations    Reservation[]
+  reviews         Review[]
+  categories      ListingCategory[]
+  branch          Branch            @relation(fields: [branch_id], references: [id])
+  ReservationItem ReservationItem[]
 
   @@index([business_id])
   @@index([branch_id])
