@@ -10,6 +10,25 @@ import {
 
 const prisma = new PrismaClient();
 
+interface MapSearchQuery {
+  latitude: number;
+  longitude: number;
+  radius: number; // in meters
+  minPrice?: number;
+  maxPrice?: number;
+  categoryIds?: string[];
+  searchTerm?: string;
+  page?: number;
+  limit?: number;
+}
+
+interface MapBounds {
+  minLat: number;
+  maxLat: number;
+  minLng: number;
+  maxLng: number;
+}
+
 export class FoodListingService {
   async createListing(
     businessId: string,
@@ -179,7 +198,6 @@ export class FoodListingService {
 
     return this.getListing(updatedListing.id);
   }
-
   async getListing(listingId: string) {
     const listing = await prisma.foodListing.findUnique({
       where: { id: listingId },
@@ -523,5 +541,167 @@ export class FoodListingService {
         });
       }
     }
+  }
+
+  private calculateMapBounds(
+    latitude: number,
+    longitude: number,
+    radius: number
+  ): MapBounds {
+    // Convert radius from meters to degrees (approximate)
+    const latDegrees = radius / 111000; // 1 degree ≈ 111km
+    const lngDegrees = radius / (111000 * Math.cos((latitude * Math.PI) / 180));
+
+    return {
+      minLat: latitude - latDegrees,
+      maxLat: latitude + latDegrees,
+      minLng: longitude - lngDegrees,
+      maxLng: longitude + lngDegrees,
+    };
+  }
+
+  private buildMapSearchWhereClause(query: MapSearchQuery) {
+    const bounds = this.calculateMapBounds(
+      query.latitude,
+      query.longitude,
+      query.radius
+    );
+
+    const where: any = {
+      status: "AVAILABLE",
+      location: {
+        latitude: {
+          gte: bounds.minLat,
+          lte: bounds.maxLat,
+        },
+        longitude: {
+          gte: bounds.minLng,
+          lte: bounds.maxLng,
+        },
+      },
+    };
+
+    // Add price range filter
+    if (query.minPrice !== undefined || query.maxPrice !== undefined) {
+      where.price = {};
+      if (query.minPrice !== undefined) where.price.gte = query.minPrice;
+      if (query.maxPrice !== undefined) where.price.lte = query.maxPrice;
+    }
+
+    // Add category filter
+    if (query.categoryIds && query.categoryIds.length > 0) {
+      where.categories = {
+        some: {
+          category_id: {
+            in: query.categoryIds,
+          },
+        },
+      };
+    }
+
+    // Add search term filter
+    if (query.searchTerm) {
+      where.OR = [
+        { title: { contains: query.searchTerm, mode: "insensitive" } },
+        { description: { contains: query.searchTerm, mode: "insensitive" } },
+      ];
+    }
+
+    return where;
+  }
+
+  async searchByMap(query: MapSearchQuery) {
+    const page = query.page || 1;
+    const limit = query.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const where = this.buildMapSearchWhereClause(query);
+
+    // Get total count and listings
+    const [total, listings] = await Promise.all([
+      prisma.foodListing.count({ where }),
+      prisma.foodListing.findMany({
+        where,
+        include: {
+          business: {
+            select: {
+              id: true,
+              company_name: true,
+              is_verified: true,
+              logo: true,
+            },
+          },
+          branch: {
+            select: {
+              id: true,
+              name: true,
+              branch_code: true,
+              operating_hours: true,
+              location: true,
+            },
+          },
+          categories: {
+            include: {
+              category: true,
+            },
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: [{ pickup_status: "asc" }, { created_at: "desc" }],
+      }),
+    ]);
+
+    // Calculate distance for each listing
+    const listingsWithDistance = listings.map((listing) => {
+      const distance = this.calculateDistance(
+        query.latitude,
+        query.longitude,
+        Number(listing.branch?.location.latitude),
+        Number(listing.branch?.location.longitude)
+      );
+
+      return {
+        ...listing,
+        distance: Math.round(distance * 100) / 100, // Round to 2 decimal places
+      };
+    });
+
+    // Sort by distance
+    listingsWithDistance.sort((a, b) => a.distance - b.distance);
+
+    return {
+      listings: listingsWithDistance,
+      pagination: {
+        total,
+        page,
+        limit,
+        total_pages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  private calculateDistance(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ): number {
+    // Implementation of Haversine formula to calculate distance in kilometers
+    const R = 6371; // Earth's radius in km
+    const dLat = this.toRad(lat2 - lat1);
+    const dLon = this.toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.toRad(lat1)) *
+        Math.cos(this.toRad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  private toRad(value: number): number {
+    return (value * Math.PI) / 180;
   }
 }

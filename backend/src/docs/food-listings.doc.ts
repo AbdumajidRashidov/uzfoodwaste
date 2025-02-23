@@ -511,3 +511,231 @@
  *       403:
  *         description: Forbidden - Not a business user
  */
+
+/**
+ * @swagger
+ * /api/food-listings/map-search:
+ *   get:
+ *     tags:
+ *       - Food Listings
+ *     summary: Search food listings by map location
+ *     description: |
+ *       Retrieve food listings within a specified radius of a geographical point.
+ *       Results can be filtered by price, halal status, categories, and more.
+ *       Distance is calculated from the search point to each listing.
+ *     parameters:
+ *       - in: query
+ *         name: latitude
+ *         required: true
+ *         schema:
+ *           type: number
+ *           format: float
+ *           minimum: -90
+ *           maximum: 90
+ *         description: Latitude of the search center point
+ *         example: 41.2995
+ *       - in: query
+ *         name: longitude
+ *         required: true
+ *         schema:
+ *           type: number
+ *           format: float
+ *           minimum: -180
+ *           maximum: 180
+ *         description: Longitude of the search center point
+ *         example: 69.2401
+ *       - in: query
+ *         name: radius
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 100
+ *           maximum: 50000
+ *         description: Search radius in meters
+ *         example: 1000
+ *       - in: query
+ *         name: minPrice
+ *         required: false
+ *         schema:
+ *           type: number
+ *           minimum: 0
+ *         description: Minimum price filter
+ *         example: 10000
+ *       - in: query
+ *         name: maxPrice
+ *         required: false
+ *         schema:
+ *           type: number
+ *           minimum: 0
+ *         description: Maximum price filter
+ *         example: 50000
+ *       - in: query
+ *         name: categories
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Comma-separated list of category IDs
+ *         example: "cat1,cat2"
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Search term for title and description
+ *         example: "bread"
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number for pagination
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Number of items per page
+ *     responses:
+ *       200:
+ *         description: Successful operation
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     listings:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             example: "123e4567-e89b-12d3-a456-426614174000"
+ *                           title:
+ *                             type: string
+ *                             example: "Fresh Bread"
+ *                           description:
+ *                             type: string
+ *                             example: "Freshly baked bread from our local bakery"
+ *                           price:
+ *                             type: number
+ *                             example: 15000
+ *                           original_price:
+ *                             type: number
+ *                             example: 20000
+ *                           distance:
+ *                             type: number
+ *                             description: Distance in kilometers from search point
+ *                             example: 0.75
+ *                           quantity:
+ *                             type: integer
+ *                             example: 5
+ *                           unit:
+ *                             type: string
+ *                             example: "loaf"
+ *                           expiry_date:
+ *                             type: string
+ *                             format: date-time
+ *                           pickup_start:
+ *                             type: string
+ *                             format: date-time
+ *                           pickup_end:
+ *                             type: string
+ *                             format: date-time
+ *                           status:
+ *                             type: string
+ *                             enum: [AVAILABLE, UNAVAILABLE, SOLD]
+ *                           business:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: string
+ *                               company_name:
+ *                                 type: string
+ *                                 example: "Local Bakery"
+ *                               is_verified:
+ *                                 type: boolean
+ *                               logo:
+ *                                 type: string
+ *                                 format: uri
+ *                           branch:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: string
+ *                               name:
+ *                                 type: string
+ *                                 example: "Downtown Branch"
+ *                               branch_code:
+ *                                 type: string
+ *                                 example: "BRN001"
+ *                               operating_hours:
+ *                                 type: object
+ *                           categories:
+ *                             type: array
+ *                             items:
+ *                               type: object
+ *                               properties:
+ *                                 category:
+ *                                   type: object
+ *                                   properties:
+ *                                     id:
+ *                                       type: string
+ *                                     name:
+ *                                       type: string
+ *                                       example: "Bakery"
+ *                     pagination:
+ *                       type: object
+ *                       properties:
+ *                         total:
+ *                           type: integer
+ *                           example: 50
+ *                         page:
+ *                           type: integer
+ *                           example: 1
+ *                         limit:
+ *                           type: integer
+ *                           example: 10
+ *                         total_pages:
+ *                           type: integer
+ *                           example: 5
+ *       400:
+ *         description: Bad Request - Invalid parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "error"
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid latitude value"
+ *       500:
+ *         description: Internal Server Error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "error"
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
+ *     security:
+ *       - BearerAuth: []
+ */
