@@ -24,25 +24,22 @@ export class FoodListingService {
       pickup_start: Date;
       pickup_end: Date;
       images: string[];
-      is_halal: boolean;
-      preparation_time?: string;
       storage_instructions?: string;
-      location_id: string;
       categories: string[];
       branch_id: string;
     }
   ) {
     // Verify business ownership of location
-    const location = await prisma.businessLocation.findFirst({
-      where: {
-        id: data.location_id,
-        business_id: businessId,
-      },
-    });
+    // const branch = await prisma.branch.findFirst({
+    //   where: {
+    //     id: data.location_id,
+    //     business_id: businessId,
+    //   },
+    // });
 
-    if (!location) {
-      throw new AppError("Invalid location", 400);
-    }
+    // if (!location) {
+    //   throw new AppError("Invalid location", 400);
+    // }
 
     // Verify business ownership of location
     const branch = await prisma.branch.findFirst({
@@ -72,10 +69,7 @@ export class FoodListingService {
           pickup_start: data.pickup_start,
           pickup_end: data.pickup_end,
           images: data.images,
-          is_halal: data.is_halal,
-          preparation_time: data.preparation_time,
           storage_instructions: data.storage_instructions,
-          location_id: data.location_id,
           branch_id: data.branch_id,
           categories: {
             create: data.categories.map((categoryId) => ({
@@ -89,7 +83,6 @@ export class FoodListingService {
         },
         include: {
           business: true,
-          location: true,
           branch: true,
           categories: {
             include: {
@@ -120,12 +113,9 @@ export class FoodListingService {
       pickup_end?: Date;
       images?: string[];
       status?: string;
-      is_halal?: boolean;
-      preparation_time?: string;
       storage_instructions?: string;
-      location_id?: string;
       categories?: string[];
-      branch_id?: string; // New field for branch
+      branch_id: string; // New field for branch
     }
   ) {
     // Check if listing exists and belongs to business
@@ -140,27 +130,13 @@ export class FoodListingService {
       throw new AppError("Listing not found", 404);
     }
 
-    // If location is being updated, verify business ownership
-    if (data.location_id) {
-      const location = await prisma.businessLocation.findFirst({
-        where: {
-          id: data.location_id,
-          business_id: businessId,
-        },
-      });
-
-      if (!location) {
-        throw new AppError("Invalid location", 400);
-      }
-    }
-
     // If branch is being updated, verify it belongs to the business
     if (data.branch_id) {
       const branch = await prisma.branch.findFirst({
         where: {
           id: data.branch_id,
           business_id: businessId,
-          location_id: data.location_id || listing.location_id,
+          // location_id: data.location_id || listing.location_id,
           status: "ACTIVE",
         },
       });
@@ -209,7 +185,6 @@ export class FoodListingService {
       where: { id: listingId },
       include: {
         business: true,
-        location: true,
         branch: true,
         categories: {
           include: {
@@ -246,10 +221,8 @@ export class FoodListingService {
     category?: string;
     minPrice?: number;
     maxPrice?: number;
-    isHalal?: boolean;
     status?: string;
     businessId?: string;
-    locationId?: string;
     branchId?: string;
     prioritizeUrgent?: boolean;
   }) {
@@ -261,6 +234,7 @@ export class FoodListingService {
     const where: any = {
       status: query.status || "AVAILABLE",
       quantity: { not: 0 },
+      // pickup_status: { not: "expired" },
     };
 
     // Search filter
@@ -282,19 +256,14 @@ export class FoodListingService {
       }
     }
 
-    // Halal status filter
-    if (query.isHalal !== undefined) {
-      where.is_halal = query.isHalal;
-    }
-
     // Business, location, and branch filters
     if (query.businessId) {
       where.business_id = query.businessId;
     }
 
-    if (query.locationId) {
-      where.location_id = query.locationId;
-    }
+    // if (query.locationId) {
+    //   where.location_id = query.locationId;
+    // }
 
     if (query.branchId) {
       where.branch_id = query.branchId;
@@ -337,8 +306,12 @@ export class FoodListingService {
         where,
         include: {
           business: true,
-          location: true,
-          branch: true,
+          branch: {
+            include: {
+              location: true,
+            },
+          },
+
           categories: {
             include: {
               category: true,
@@ -388,7 +361,11 @@ export class FoodListingService {
         business_id: businessId,
       },
       include: {
-        branch: true,
+        branch: {
+          include: {
+            location: true,
+          },
+        },
       },
     });
 
@@ -460,8 +437,11 @@ export class FoodListingService {
       prisma.foodListing.findMany({
         where,
         include: {
-          location: true,
-          branch: true, // Include branch information
+          branch: {
+            include: {
+              location: true,
+            },
+          }, // Include branch information
           categories: {
             include: {
               category: true,

@@ -108,10 +108,8 @@ export class FoodListingController {
         maxPrice: req.query.maxPrice
           ? parseFloat(req.query.maxPrice as string)
           : undefined,
-        isHalal: req.query.isHalal ? req.query.isHalal === "true" : undefined,
         status: req.query.status as string | undefined,
         businessId: req.query.businessId as string | undefined,
-        locationId: req.query.locationId as string | undefined,
         branchId: req.query.branchId as string | undefined,
         prioritizeUrgent: req.query.prioritizeUrgent === "true",
       };
@@ -192,13 +190,7 @@ export class FoodListingController {
       .withMessage("Valid pickup end time is required"),
     body("images").isArray().withMessage("Images must be an array"),
     body("images.*").isString().withMessage("Each image must be a string URL"),
-    body("is_halal").isBoolean().withMessage("Is halal must be a boolean"),
-    body("preparation_time").optional().isString(),
     body("storage_instructions").optional().isString(),
-    body("location_id")
-      .isString()
-      .notEmpty()
-      .withMessage("Location ID is required"),
     body("categories").isArray().withMessage("Category IDs must be an array"),
     body("categories.*")
       .isString()
@@ -253,16 +245,7 @@ export class FoodListingController {
       .optional()
       .isIn(["AVAILABLE", "UNAVAILABLE", "SOLD"])
       .withMessage("Invalid status"),
-    body("is_halal")
-      .optional()
-      .isBoolean()
-      .withMessage("Is halal must be a boolean"),
-    body("preparation_time").optional().isString(),
     body("storage_instructions").optional().isString(),
-    body("location_id")
-      .optional()
-      .isString()
-      .withMessage("Location ID must be a string"),
     body("categories")
       .optional()
       .isArray()

@@ -95,7 +95,6 @@
  *         - expiry_date
  *         - pickup_start
  *         - pickup_end
- *         - location_id
  *       properties:
  *         id:
  *           type: string
@@ -144,22 +143,9 @@
  *           enum: [AVAILABLE, UNAVAILABLE, SOLD]
  *           default: AVAILABLE
  *           description: Current status of the listing
- *         is_halal:
- *           type: boolean
- *           default: false
- *           description: Whether the food is halal certified
- *         preparation_time:
- *           type: string
- *           description: Time needed for preparation
  *         storage_instructions:
  *           type: string
  *           description: Instructions for food storage
- *         location_id:
- *           type: string
- *           format: uuid
- *           description: ID of the business location
- *         location:
- *           $ref: '#/components/schemas/Location'
  *         branch_id:
  *           type: string
  *           format: uuid
@@ -199,8 +185,6 @@
  *               - pickup_start
  *               - pickup_end
  *               - images
- *               - is_halal
- *               - location_id
  *             properties:
  *               title:
  *                 type: string
@@ -242,19 +226,9 @@
  *                 items:
  *                   type: string
  *                 description: Array of image URLs
- *               is_halal:
- *                 type: boolean
- *                 description: Whether the food is halal certified
- *               preparation_time:
- *                 type: string
- *                 description: Time needed for preparation (optional)
  *               storage_instructions:
  *                 type: string
  *                 description: Instructions for food storage (optional)
- *               location_id:
- *                 type: string
- *                 format: uuid
- *                 description: ID of the business location
  *               categories:
  *                 type: array
  *                 items:
@@ -324,11 +298,6 @@
  *           type: number
  *         description: Maximum price filter
  *       - in: query
- *         name: isHalal
- *         schema:
- *           type: boolean
- *         description: Filter halal items
- *       - in: query
  *         name: status
  *         schema:
  *           type: string
@@ -339,11 +308,6 @@
  *         schema:
  *           type: string
  *         description: Filter by business ID
- *       - in: query
- *         name: locationId
- *         schema:
- *           type: string
- *         description: Filter by location ID
  *       - in: query
  *         name: branchId
  *         schema:
