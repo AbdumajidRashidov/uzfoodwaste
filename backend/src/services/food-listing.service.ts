@@ -10,25 +10,6 @@ import {
 
 const prisma = new PrismaClient();
 
-interface MapSearchQuery {
-  latitude: number;
-  longitude: number;
-  radius: number; // in meters
-  minPrice?: number;
-  maxPrice?: number;
-  categoryIds?: string[];
-  searchTerm?: string;
-  page?: number;
-  limit?: number;
-}
-
-interface MapBounds {
-  minLat: number;
-  maxLat: number;
-  minLng: number;
-  maxLng: number;
-}
-
 export class FoodListingService {
   async createListing(
     businessId: string,
@@ -43,22 +24,25 @@ export class FoodListingService {
       pickup_start: Date;
       pickup_end: Date;
       images: string[];
+      is_halal: boolean;
+      preparation_time?: string;
       storage_instructions?: string;
+      location_id: string;
       categories: string[];
       branch_id: string;
     }
   ) {
     // Verify business ownership of location
-    // const branch = await prisma.branch.findFirst({
-    //   where: {
-    //     id: data.location_id,
-    //     business_id: businessId,
-    //   },
-    // });
+    const location = await prisma.businessLocation.findFirst({
+      where: {
+        id: data.location_id,
+        business_id: businessId,
+      },
+    });
 
-    // if (!location) {
-    //   throw new AppError("Invalid location", 400);
-    // }
+    if (!location) {
+      throw new AppError("Invalid location", 400);
+    }
 
     // Verify business ownership of location
     const branch = await prisma.branch.findFirst({
@@ -88,7 +72,10 @@ export class FoodListingService {
           pickup_start: data.pickup_start,
           pickup_end: data.pickup_end,
           images: data.images,
+          is_halal: data.is_halal,
+          preparation_time: data.preparation_time,
           storage_instructions: data.storage_instructions,
+          location_id: data.location_id,
           branch_id: data.branch_id,
           categories: {
             create: data.categories.map((categoryId) => ({
@@ -102,6 +89,7 @@ export class FoodListingService {
         },
         include: {
           business: true,
+          location: true,
           branch: true,
           categories: {
             include: {
@@ -132,9 +120,12 @@ export class FoodListingService {
       pickup_end?: Date;
       images?: string[];
       status?: string;
+      is_halal?: boolean;
+      preparation_time?: string;
       storage_instructions?: string;
+      location_id?: string;
       categories?: string[];
-      branch_id: string; // New field for branch
+      branch_id?: string; // New field for branch
     }
   ) {
     // Check if listing exists and belongs to business
@@ -149,13 +140,27 @@ export class FoodListingService {
       throw new AppError("Listing not found", 404);
     }
 
+    // If location is being updated, verify business ownership
+    if (data.location_id) {
+      const location = await prisma.businessLocation.findFirst({
+        where: {
+          id: data.location_id,
+          business_id: businessId,
+        },
+      });
+
+      if (!location) {
+        throw new AppError("Invalid location", 400);
+      }
+    }
+
     // If branch is being updated, verify it belongs to the business
     if (data.branch_id) {
       const branch = await prisma.branch.findFirst({
         where: {
           id: data.branch_id,
           business_id: businessId,
-          // location_id: data.location_id || listing.location_id,
+          location_id: data.location_id || listing.location_id,
           status: "ACTIVE",
         },
       });
@@ -198,11 +203,13 @@ export class FoodListingService {
 
     return this.getListing(updatedListing.id);
   }
+
   async getListing(listingId: string) {
     const listing = await prisma.foodListing.findUnique({
       where: { id: listingId },
       include: {
         business: true,
+        location: true,
         branch: true,
         categories: {
           include: {
@@ -239,8 +246,10 @@ export class FoodListingService {
     category?: string;
     minPrice?: number;
     maxPrice?: number;
+    isHalal?: boolean;
     status?: string;
     businessId?: string;
+    locationId?: string;
     branchId?: string;
     prioritizeUrgent?: boolean;
   }) {
@@ -252,7 +261,6 @@ export class FoodListingService {
     const where: any = {
       status: query.status || "AVAILABLE",
       quantity: { not: 0 },
-      // pickup_status: { not: "expired" },
     };
 
     // Search filter
@@ -274,14 +282,19 @@ export class FoodListingService {
       }
     }
 
+    // Halal status filter
+    if (query.isHalal !== undefined) {
+      where.is_halal = query.isHalal;
+    }
+
     // Business, location, and branch filters
     if (query.businessId) {
       where.business_id = query.businessId;
     }
 
-    // if (query.locationId) {
-    //   where.location_id = query.locationId;
-    // }
+    if (query.locationId) {
+      where.location_id = query.locationId;
+    }
 
     if (query.branchId) {
       where.branch_id = query.branchId;
@@ -324,12 +337,8 @@ export class FoodListingService {
         where,
         include: {
           business: true,
-          branch: {
-            include: {
-              location: true,
-            },
-          },
-
+          location: true,
+          branch: true,
           categories: {
             include: {
               category: true,
@@ -379,11 +388,7 @@ export class FoodListingService {
         business_id: businessId,
       },
       include: {
-        branch: {
-          include: {
-            location: true,
-          },
-        },
+        branch: true,
       },
     });
 
@@ -455,11 +460,8 @@ export class FoodListingService {
       prisma.foodListing.findMany({
         where,
         include: {
-          branch: {
-            include: {
-              location: true,
-            },
-          }, // Include branch information
+          location: true,
+          branch: true, // Include branch information
           categories: {
             include: {
               category: true,
@@ -541,167 +543,5 @@ export class FoodListingService {
         });
       }
     }
-  }
-
-  private calculateMapBounds(
-    latitude: number,
-    longitude: number,
-    radius: number
-  ): MapBounds {
-    // Convert radius from meters to degrees (approximate)
-    const latDegrees = radius / 111000; // 1 degree ≈ 111km
-    const lngDegrees = radius / (111000 * Math.cos((latitude * Math.PI) / 180));
-
-    return {
-      minLat: latitude - latDegrees,
-      maxLat: latitude + latDegrees,
-      minLng: longitude - lngDegrees,
-      maxLng: longitude + lngDegrees,
-    };
-  }
-
-  private buildMapSearchWhereClause(query: MapSearchQuery) {
-    const bounds = this.calculateMapBounds(
-      query.latitude,
-      query.longitude,
-      query.radius
-    );
-
-    const where: any = {
-      status: "AVAILABLE",
-      location: {
-        latitude: {
-          gte: bounds.minLat,
-          lte: bounds.maxLat,
-        },
-        longitude: {
-          gte: bounds.minLng,
-          lte: bounds.maxLng,
-        },
-      },
-    };
-
-    // Add price range filter
-    if (query.minPrice !== undefined || query.maxPrice !== undefined) {
-      where.price = {};
-      if (query.minPrice !== undefined) where.price.gte = query.minPrice;
-      if (query.maxPrice !== undefined) where.price.lte = query.maxPrice;
-    }
-
-    // Add category filter
-    if (query.categoryIds && query.categoryIds.length > 0) {
-      where.categories = {
-        some: {
-          category_id: {
-            in: query.categoryIds,
-          },
-        },
-      };
-    }
-
-    // Add search term filter
-    if (query.searchTerm) {
-      where.OR = [
-        { title: { contains: query.searchTerm, mode: "insensitive" } },
-        { description: { contains: query.searchTerm, mode: "insensitive" } },
-      ];
-    }
-
-    return where;
-  }
-
-  async searchByMap(query: MapSearchQuery) {
-    const page = query.page || 1;
-    const limit = query.limit || 10;
-    const skip = (page - 1) * limit;
-
-    const where = this.buildMapSearchWhereClause(query);
-
-    // Get total count and listings
-    const [total, listings] = await Promise.all([
-      prisma.foodListing.count({ where }),
-      prisma.foodListing.findMany({
-        where,
-        include: {
-          business: {
-            select: {
-              id: true,
-              company_name: true,
-              is_verified: true,
-              logo: true,
-            },
-          },
-          branch: {
-            select: {
-              id: true,
-              name: true,
-              branch_code: true,
-              operating_hours: true,
-              location: true,
-            },
-          },
-          categories: {
-            include: {
-              category: true,
-            },
-          },
-        },
-        skip,
-        take: limit,
-        orderBy: [{ pickup_status: "asc" }, { created_at: "desc" }],
-      }),
-    ]);
-
-    // Calculate distance for each listing
-    const listingsWithDistance = listings.map((listing) => {
-      const distance = this.calculateDistance(
-        query.latitude,
-        query.longitude,
-        Number(listing.branch?.location.latitude),
-        Number(listing.branch?.location.longitude)
-      );
-
-      return {
-        ...listing,
-        distance: Math.round(distance * 100) / 100, // Round to 2 decimal places
-      };
-    });
-
-    // Sort by distance
-    listingsWithDistance.sort((a, b) => a.distance - b.distance);
-
-    return {
-      listings: listingsWithDistance,
-      pagination: {
-        total,
-        page,
-        limit,
-        total_pages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  private calculateDistance(
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number
-  ): number {
-    // Implementation of Haversine formula to calculate distance in kilometers
-    const R = 6371; // Earth's radius in km
-    const dLat = this.toRad(lat2 - lat1);
-    const dLon = this.toRad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRad(lat1)) *
-        Math.cos(this.toRad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }
-
-  private toRad(value: number): number {
-    return (value * Math.PI) / 180;
   }
 }

@@ -32,11 +32,7 @@ export class NotificationService {
               listing: {
                 include: {
                   business: true,
-                  branch: {
-                    include: {
-                      location: true,
-                    },
-                  },
+                  location: true,
                 },
               },
             },

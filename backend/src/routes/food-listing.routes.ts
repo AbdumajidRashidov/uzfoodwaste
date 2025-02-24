@@ -46,11 +46,13 @@ router.post(
       .withMessage("Valid pickup end time is required"),
     body("images").isArray().withMessage("Images must be an array"),
     body("images.*").isString().withMessage("Each image must be a string URL"),
+    body("is_halal").isBoolean().withMessage("Is halal must be a boolean"),
+    body("preparation_time").optional().isString(),
     body("storage_instructions").optional().isString(),
-    body("branch_id")
+    body("location_id")
       .isString()
       .notEmpty()
-      .withMessage("Branch ID is required"),
+      .withMessage("Location ID is required"),
     body("categories").isArray().withMessage("Category IDs must be an array"),
     body("categories.*")
       .isString()
@@ -103,11 +105,16 @@ router.patch(
       .optional()
       .isIn(["AVAILABLE", "UNAVAILABLE", "SOLD"])
       .withMessage("Invalid status"),
+    body("is_halal")
+      .optional()
+      .isBoolean()
+      .withMessage("Is halal must be a boolean"),
+    body("preparation_time").optional().isString(),
     body("storage_instructions").optional().isString(),
-    body("branch_id")
+    body("location_id")
       .optional()
       .isString()
-      .withMessage("Branch ID must be a string"),
+      .withMessage("Location ID must be a string"),
     body("categories")
       .optional()
       .isArray()
