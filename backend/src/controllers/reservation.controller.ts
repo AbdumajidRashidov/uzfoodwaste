@@ -175,7 +175,15 @@ export class ReservationController {
     next: NextFunction
   ) {
     try {
-      const businessId = req.user?.business?.id;
+      const user = req?.user;
+
+      const branch = await prisma.branch.findFirst({
+        where: {
+          manager_email: user?.email,
+        },
+      });
+      const businessId = branch?.business_id as string;
+
       if (!businessId) {
         throw new AppError("Business authentication required", 401);
       }
