@@ -17,6 +17,7 @@ import fileRoutes from "./file.routes";
 import bannerRoutes from "./banner.routes";
 import branchRoutes from "./branch.routes";
 import branchManagerRoutes from "./branch-manager.routes";
+import mapSearchRoutes from "./map-search.routes";
 
 import { apiLimiter } from "../middlewares/rate-limit.middleware";
 
@@ -53,5 +54,6 @@ router.use(`${API_VERSION}/admin`, adminRoutes);
 router.use(`${API_VERSION}/banners`, bannerRoutes);
 router.use(`${API_VERSION}/branches`, branchRoutes);
 router.use(`${API_VERSION}/branch-managers`, branchManagerRoutes);
+router.use(`${API_VERSION}/map-search`, mapSearchRoutes);
 
 export default router;
