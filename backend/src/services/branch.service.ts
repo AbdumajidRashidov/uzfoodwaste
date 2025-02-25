@@ -24,9 +24,11 @@ export class BranchService {
       manager_name: string;
       manager_email: string;
       manager_phone: string;
+      manager_password: string;
       operating_hours: any;
       services: string[];
       policies?: any;
+      status: string;
     }
   ) {
     // Verify business exists
@@ -80,7 +82,7 @@ export class BranchService {
     }
 
     // Generate temporary password for manager
-    const tempPassword = this.generateTempPassword();
+    const tempPassword = data.manager_password;
     const hashedPassword = await bcrypt.hash(tempPassword, 12);
 
     // Create branch and manager user in a transaction
@@ -120,6 +122,7 @@ export class BranchService {
           manager_name: data.manager_name,
           manager_email: data.manager_email,
           manager_phone: data.manager_phone,
+          manager_password: hashedPassword,
           operating_hours: data.operating_hours,
           services: data.services,
           policies: data.policies,

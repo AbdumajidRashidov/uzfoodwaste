@@ -1,7 +1,10 @@
 // src/services/business.service.ts
 import { PrismaClient } from "@prisma/client";
 import { AppError } from "../middlewares/error.middleware";
+import { BranchService } from "./branch.service";
+import bcrypt from "bcryptjs";
 
+const branchService = new BranchService();
 const prisma = new PrismaClient();
 
 export class BusinessService {
@@ -243,6 +246,7 @@ export class BusinessService {
         manager_name: string;
         manager_email: string;
         manager_phone: string;
+        manager_password: string;
         operating_hours: any;
         services: string[];
         policies?: any;
@@ -295,16 +299,24 @@ export class BusinessService {
         if (existingBranch) {
           throw new AppError("Branch code already exists", 400);
         }
+        // Generate temporary password for manager
+        const tempPassword = data.branch_data.manager_password;
+        const hashedPassword = await bcrypt.hash(tempPassword, 12);
 
-        // Create branch
-        const branch = await prisma.branch.create({
-          data: {
-            ...data.branch_data,
-            business_id: businessId,
-            location_id: location.id,
-            opening_date: new Date(),
-            status: "ACTIVE",
-          },
+        const branch = await branchService.createBranch(businessId, {
+          location_id: location.id,
+          name: data.branch_data.name,
+          branch_code: data.branch_data.branch_code,
+          description: data.branch_data.description,
+          manager_name: data.branch_data.manager_name,
+          manager_email: data.branch_data.manager_email,
+          manager_phone: data.branch_data.manager_phone,
+          manager_password: hashedPassword,
+          operating_hours: data.branch_data.operating_hours,
+          services: data.branch_data.services,
+          policies: data.branch_data.policies,
+          opening_date: new Date(),
+          status: "ACTIVE",
         });
 
         return { location, branch };
@@ -593,6 +605,7 @@ export class BusinessService {
       manager_name: string;
       manager_email: string;
       manager_phone: string;
+      manager_password: string;
       operating_hours: any;
       services: string[];
       policies?: any;
@@ -638,11 +651,23 @@ export class BusinessService {
     if (existingBranch) {
       throw new AppError("Branch code already exists", 400);
     }
-
+    // Generate temporary password for manager
+    const tempPassword = data.manager_password;
+    const hashedPassword = await bcrypt.hash(tempPassword, 12);
     // Create branch
     const branch = await prisma.branch.create({
       data: {
-        ...data,
+        location_id: data.location_id,
+        name: data.name,
+        branch_code: data.branch_code,
+        description: data.description,
+        manager_name: data.manager_name,
+        manager_email: data.manager_email,
+        manager_phone: data.manager_phone,
+        manager_password: hashedPassword,
+        operating_hours: data.operating_hours,
+        services: data.services,
+        policies: data.policies,
         business_id: businessId,
         opening_date: new Date(),
         status: "ACTIVE",

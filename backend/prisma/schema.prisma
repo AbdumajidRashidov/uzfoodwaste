@@ -86,22 +86,23 @@ model Business {
 }
 
 model Branch {
-  id              String   @id @default(uuid())
-  business_id     String
-  location_id     String   @unique
-  name            String
-  branch_code     String   @unique
-  description     String?
-  status          String   @default("ACTIVE") // ACTIVE, INACTIVE
-  opening_date    DateTime
-  manager_name    String
-  manager_email   String
-  manager_phone   String
-  operating_hours Json // Store as structured JSON
-  services        String[] // Array of services offered
-  policies        Json? // Store branch-specific policies as JSON
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  id               String   @id @default(uuid())
+  business_id      String
+  location_id      String   @unique
+  name             String
+  branch_code      String   @unique
+  description      String?
+  status           String   @default("ACTIVE") // ACTIVE, INACTIVE
+  opening_date     DateTime
+  manager_name     String
+  manager_email    String
+  manager_phone    String
+  manager_password String
+  operating_hours  Json // Store as structured JSON
+  services         String[] // Array of services offered
+  policies         Json? // Store branch-specific policies as JSON
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
 
   // Relations
   business       Business         @relation(fields: [business_id], references: [id])
