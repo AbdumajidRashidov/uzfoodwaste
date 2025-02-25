@@ -200,7 +200,7 @@ export class AdminService {
     const [
       totalUsers,
       totalBusinesses,
-      totalCustomers,
+      // totalCustomers,
       totalListings,
       totalReservations,
       averageRating,
@@ -211,7 +211,6 @@ export class AdminService {
     ] = await Promise.all([
       prisma.user.count(),
       prisma.business.count(),
-      prisma.customer.count(),
       prisma.foodListing.count(),
       prisma.reservation.count(),
       prisma.review.aggregate({
@@ -244,6 +243,14 @@ export class AdminService {
         _count: true,
       }),
     ]);
+
+    const customers = await prisma.user.findMany({
+      where: {
+        role: "CUSTOMER",
+      },
+    });
+
+    let totalCustomers = customers.length;
 
     return {
       overview: {
@@ -432,7 +439,7 @@ export class AdminService {
   }
 
   async getUserAnalytics() {
-    const [users, customers, businesses] = await Promise.all([
+    let [users, customers, businesses] = await Promise.all([
       prisma.user.findMany(),
       prisma.customer.findMany({
         include: {
@@ -454,8 +461,12 @@ export class AdminService {
       }),
     ]);
 
+    const filteredCustomers = customers.filter((customer) => {
+      return customer.user.role === "CUSTOMER";
+    });
+
     // Calculate user engagement metrics
-    const customerEngagement = customers.map((customer) => ({
+    const customerEngagement = filteredCustomers.map((customer) => ({
       customer_id: customer.id,
       total_reservations: customer.reservations.length,
       total_reviews: customer.reviews.length,
@@ -475,17 +486,17 @@ export class AdminService {
       user_overview: {
         total_users: users.length,
         verified_users: users.filter((u) => u.is_verified).length,
-        customer_count: customers.length,
+        customer_count: filteredCustomers.length,
         business_count: businesses.length,
       },
       customer_metrics: {
         engagement: customerEngagement,
         average_reservations_per_customer:
-          customers.reduce((acc, c) => acc + c.reservations.length, 0) /
-            customers.length || 0,
+          filteredCustomers.reduce((acc, c) => acc + c.reservations.length, 0) /
+            filteredCustomers.length || 0,
         average_reviews_per_customer:
-          customers.reduce((acc, c) => acc + c.reviews.length, 0) /
-            customers.length || 0,
+          filteredCustomers.reduce((acc, c) => acc + c.reviews.length, 0) /
+            filteredCustomers.length || 0,
       },
       business_metrics: {
         engagement: businessEngagement,
