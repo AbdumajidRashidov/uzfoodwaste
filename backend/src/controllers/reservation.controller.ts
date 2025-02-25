@@ -3,7 +3,9 @@ import { Request, Response, NextFunction } from "express";
 import { ReservationService } from "../services/reservation.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { AppError } from "../middlewares/error.middleware";
+import { PrismaClient } from "@prisma/client";
 
+const prisma = new PrismaClient();
 const reservationService = new ReservationService();
 
 export class ReservationController {
@@ -48,7 +50,14 @@ export class ReservationController {
     try {
       const { reservationId } = req.params;
       const { confirmation_code } = req.body;
-      const businessId = req.user?.business?.id;
+      const user = req?.user;
+
+      const branch = await prisma.branch.findFirst({
+        where: {
+          manager_email: user?.email,
+        },
+      });
+      const businessId = branch?.business_id as string;
 
       if (!businessId) {
         throw new AppError("Business authentication required", 401);

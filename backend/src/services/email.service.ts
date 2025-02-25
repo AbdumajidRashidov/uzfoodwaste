@@ -95,7 +95,7 @@ interface WelcomeEmailData {
 export class EmailService {
   private transporter: nodemailer.Transporter;
   private readonly MAX_RETRIES = 3;
-  private readonly RETRY_DELAY = 1000; // 1 second
+  private readonly RETRY_DELAY = 10000; // 1 second
 
   constructor() {
     this.transporter = nodemailer.createTransport({

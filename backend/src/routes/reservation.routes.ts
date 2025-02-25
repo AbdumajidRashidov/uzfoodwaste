@@ -43,7 +43,7 @@ router.post(
 // Verify pickup
 router.post(
   "/:reservationId/verify",
-  authorize("BUSINESS"),
+  authorize("BUSINESS", "BRANCH_MANAGER"),
   [body("confirmation_code").isString().notEmpty()],
   validate,
   reservationController.verifyPickup
