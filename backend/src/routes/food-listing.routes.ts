@@ -18,7 +18,7 @@ router.use(protect);
 // Business routes
 router.post(
   "/",
-  authorize("BUSINESS"),
+  authorize("BUSINESS", "BRANCH_MANAGER"),
   [
     body("title").isString().notEmpty().withMessage("Title is required"),
     body("description")

@@ -237,20 +237,6 @@ export class BusinessService {
       is_main_location: boolean;
       phone: string;
       working_hours: string;
-      // New optional fields for branch creation
-      create_branch?: boolean;
-      branch_data?: {
-        name: string;
-        branch_code: string;
-        description?: string;
-        manager_name: string;
-        manager_email: string;
-        manager_phone: string;
-        manager_password: string;
-        operating_hours: any;
-        services: string[];
-        policies?: any;
-      };
     }
   ) {
     // Check if business exists
@@ -288,39 +274,6 @@ export class BusinessService {
           working_hours: data.working_hours,
         },
       });
-
-      // If branch creation is requested
-      if (data.create_branch && data.branch_data) {
-        // Verify branch code uniqueness
-        const existingBranch = await prisma.branch.findFirst({
-          where: { branch_code: data.branch_data.branch_code },
-        });
-
-        if (existingBranch) {
-          throw new AppError("Branch code already exists", 400);
-        }
-        // Generate temporary password for manager
-        const tempPassword = data.branch_data.manager_password;
-        const hashedPassword = await bcrypt.hash(tempPassword, 12);
-
-        const branch = await branchService.createBranch(businessId, {
-          location_id: location.id,
-          name: data.branch_data.name,
-          branch_code: data.branch_data.branch_code,
-          description: data.branch_data.description,
-          manager_name: data.branch_data.manager_name,
-          manager_email: data.branch_data.manager_email,
-          manager_phone: data.branch_data.manager_phone,
-          manager_password: hashedPassword,
-          operating_hours: data.branch_data.operating_hours,
-          services: data.branch_data.services,
-          policies: data.branch_data.policies,
-          opening_date: new Date(),
-          status: "ACTIVE",
-        });
-
-        return { location, branch };
-      }
 
       return { location };
     });

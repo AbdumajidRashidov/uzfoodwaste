@@ -12,6 +12,7 @@
  *         - manager_name
  *         - manager_email
  *         - manager_phone
+ *         - manager_password
  *         - operating_hours
  *         - services
  *       properties:
@@ -54,6 +55,9 @@
  *         manager_phone:
  *           type: string
  *           description: Branch manager's phone number
+ *         manager_password:
+ *           type: string
+ *           description: Branch manager's temporary password
  *         operating_hours:
  *           type: object
  *           description: Branch operating hours structure
@@ -140,6 +144,7 @@
  *                 - manager_name
  *                 - manager_email
  *                 - manager_phone
+ *                 - manager_password
  *                 - operating_hours
  *                 - services
  *               properties:
@@ -161,6 +166,8 @@
  *                   type: string
  *                   format: email
  *                 manager_phone:
+ *                   type: string
+ *                 manager_password:
  *                   type: string
  *                 operating_hours:
  *                   type: object

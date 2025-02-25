@@ -395,32 +395,6 @@
  *                   type: string
  *                 working_hours:
  *                   type: string
- *                 create_branch:
- *                   type: boolean
- *                   default: false
- *                 branch_data:
- *                   type: object
- *                   properties:
- *                     name:
- *                       type: string
- *                     branch_code:
- *                       type: string
- *                     description:
- *                       type: string
- *                     manager_name:
- *                       type: string
- *                     manager_email:
- *                       type: string
- *                     manager_phone:
- *                       type: string
- *                     operating_hours:
- *                       type: object
- *                     services:
- *                       type: array
- *                       items:
- *                         type: string
- *                     policies:
- *                       type: object
  *       responses:
  *         201:
  *           description: Location created

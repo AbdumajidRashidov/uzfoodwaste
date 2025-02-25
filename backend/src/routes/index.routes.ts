@@ -52,6 +52,6 @@ router.use(`${API_VERSION}/files`, fileRoutes);
 router.use(`${API_VERSION}/admin`, adminRoutes);
 router.use(`${API_VERSION}/banners`, bannerRoutes);
 router.use(`${API_VERSION}/branches`, branchRoutes);
-router.use(`${API_VERSION}/branche-managers`, branchManagerRoutes);
+router.use(`${API_VERSION}/branch-managers`, branchManagerRoutes);
 
 export default router;
