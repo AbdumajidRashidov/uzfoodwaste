@@ -3,7 +3,9 @@ import { Request, Response, NextFunction } from "express";
 import { AuthService } from "../services/auth.service";
 import { AppError } from "../middlewares/error.middleware";
 import { AuthRequest } from "../middlewares/auth.middleware";
+import { PrismaClient } from "@prisma/client";
 
+const prisma = new PrismaClient();
 const authService = new AuthService();
 
 export class AuthController {
@@ -100,7 +102,7 @@ export class AuthController {
         throw new AppError("User ID not found", 400);
       }
 
-      const result = await authService.startTelegramVerification(req.user.id);
+      const result = await authService.startTelegramVerification(req.user?.id);
       res.status(200).json({
         status: "success",
         data: result,

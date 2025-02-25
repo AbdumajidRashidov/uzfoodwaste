@@ -22,12 +22,12 @@ export class FoodListingController {
 
       const user = req?.user;
 
-      const business = await prisma.business.findUnique({
+      const branch = await prisma.branch.findFirst({
         where: {
-          user_id: user?.id,
+          manager_email: user?.email,
         },
       });
-      const businessId = business?.id as string;
+      const businessId = branch?.business_id as string;
 
       const listing = await foodListingService.createListing(
         businessId,
@@ -54,12 +54,12 @@ export class FoodListingController {
 
       const user = req?.user;
 
-      const business = await prisma.business.findUnique({
+      const branch = await prisma.branch.findFirst({
         where: {
-          user_id: user?.id,
+          manager_email: user?.email,
         },
       });
-      const businessId = business?.id as string;
+      const businessId = branch?.business_id as string;
 
       const { listingId } = req.params;
       const listing = await foodListingService.updateListing(
@@ -83,12 +83,12 @@ export class FoodListingController {
     try {
       const user = req?.user;
 
-      const business = await prisma.business.findUnique({
+      const branch = await prisma.branch.findFirst({
         where: {
-          user_id: user?.id,
+          manager_email: user?.email,
         },
       });
-      const businessId = business?.id as string;
+      const businessId = branch?.business_id as string;
 
       const { listingId } = req.params;
       await foodListingService.deleteListing(businessId, listingId);
@@ -161,13 +161,13 @@ export class FoodListingController {
     try {
       const user = req?.user;
 
-      const business = await prisma.business.findUnique({
+      const branch = await prisma.branch.findFirst({
         where: {
-          user_id: user?.id,
+          manager_email: user?.email,
         },
       });
-      const businessId = business?.id as string;
-      console.log(business);
+      const businessId = branch?.business_id as string;
+
       const query = {
         page: req.query.page ? parseInt(req.query.page as string) : undefined,
         limit: req.query.limit

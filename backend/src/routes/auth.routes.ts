@@ -4,7 +4,7 @@ import { AuthController } from "../controllers/auth.controller";
 import { telegramAuthController } from "./../controllers/telegram-auth.controller";
 import { validate } from "../middlewares/validation.middleware";
 import { body } from "express-validator";
-import { protect } from "../middlewares/auth.middleware";
+import { authorize, protect } from "../middlewares/auth.middleware";
 
 const router = Router();
 const authController = new AuthController();
