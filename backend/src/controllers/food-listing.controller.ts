@@ -4,7 +4,9 @@ import { FoodListingService } from "../services/food-listing.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validation.middleware";
 import { body, query } from "express-validator";
+import { PrismaClient } from "@prisma/client";
 
+const prisma = new PrismaClient();
 const foodListingService = new FoodListingService();
 
 export class FoodListingController {
@@ -13,10 +15,19 @@ export class FoodListingController {
    */
   async createListing(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const businessId = req.user?.business?.id;
-      if (!businessId) {
-        throw new Error("Business ID not found");
+      const userRole = req.user?.role;
+      if (userRole !== "BUSINESS" && userRole !== "BRANCH_MANAGER") {
+        throw new Error("User not allowed to create listing");
       }
+
+      const user = req?.user;
+
+      const business = await prisma.business.findUnique({
+        where: {
+          user_id: user?.id,
+        },
+      });
+      const businessId = business?.id as string;
 
       const listing = await foodListingService.createListing(
         businessId,
@@ -36,10 +47,19 @@ export class FoodListingController {
    */
   async updateListing(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const businessId = req.user?.business?.id;
-      if (!businessId) {
-        throw new Error("Business ID not found");
+      const userRole = req.user?.role;
+      if (userRole !== "BUSINESS" && userRole !== "BRANCH_MANAGER") {
+        throw new Error("User not allowed to update listing");
       }
+
+      const user = req?.user;
+
+      const business = await prisma.business.findUnique({
+        where: {
+          user_id: user?.id,
+        },
+      });
+      const businessId = business?.id as string;
 
       const { listingId } = req.params;
       const listing = await foodListingService.updateListing(
@@ -61,10 +81,14 @@ export class FoodListingController {
    */
   async deleteListing(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const businessId = req.user?.business?.id;
-      if (!businessId) {
-        throw new Error("Business ID not found");
-      }
+      const user = req?.user;
+
+      const business = await prisma.business.findUnique({
+        where: {
+          user_id: user?.id,
+        },
+      });
+      const businessId = business?.id as string;
 
       const { listingId } = req.params;
       await foodListingService.deleteListing(businessId, listingId);
@@ -135,11 +159,15 @@ export class FoodListingController {
     next: NextFunction
   ) {
     try {
-      const businessId = req.user?.business?.id;
-      if (!businessId) {
-        throw new Error("Business ID not found");
-      }
+      const user = req?.user;
 
+      const business = await prisma.business.findUnique({
+        where: {
+          user_id: user?.id,
+        },
+      });
+      const businessId = business?.id as string;
+      console.log(business);
       const query = {
         page: req.query.page ? parseInt(req.query.page as string) : undefined,
         limit: req.query.limit

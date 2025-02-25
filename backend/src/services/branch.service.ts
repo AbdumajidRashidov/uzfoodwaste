@@ -31,8 +31,6 @@ export class BranchService {
       status: string;
     }
   ) {
-    console.log(businessId);
-
     // Verify business exists
     const business = await prisma.business.findUnique({
       where: { id: businessId },

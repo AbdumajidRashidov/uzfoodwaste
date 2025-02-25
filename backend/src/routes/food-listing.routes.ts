@@ -64,7 +64,7 @@ router.post(
 
 router.patch(
   "/:listingId",
-  authorize("BUSINESS"),
+  authorize("BUSINESS", "BRANCH_MANAGER"),
   [
     body("title").optional().isString().withMessage("Title must be a string"),
     body("description")
@@ -130,14 +130,14 @@ router.patch(
 
 router.delete(
   "/:listingId",
-  authorize("BUSINESS"),
+  authorize("BUSINESS", "BRANCH_MANAGER"),
   foodListingController.deleteListing
 );
 
 // Get business's own listings
 router.get(
   "/business/listings",
-  authorize("BUSINESS"),
+  authorize("BUSINESS", "BRANCH_MANAGER"),
   [...FoodListingController.queryValidation],
   foodListingController.getBusinessListings
 );

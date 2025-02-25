@@ -21,7 +21,6 @@ export const protect = async (
   try {
     // Get token from header
     const token = req.headers.authorization?.split(" ")[1];
-
     if (!token) {
       throw new AppError("Not authorized to access this route", 401);
     }
@@ -38,7 +37,6 @@ export const protect = async (
     if (!decoded || typeof decoded !== "object" || !decoded.id) {
       throw new AppError("Invalid token", 401);
     }
-
     // Get user from token
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
