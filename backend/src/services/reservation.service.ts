@@ -639,4 +639,149 @@ export class ReservationService {
       total_amount: reservation.total_amount,
     };
   }
+
+  async cancelReservation(
+    reservationId: string,
+    cancelledBy: string,
+    cancelReason: string,
+    userRole: "CUSTOMER" | "BRANCH_MANAGER"
+  ) {
+    // Find the reservation
+    const reservation = await prisma.reservation.findUnique({
+      where: { id: reservationId },
+      include: {
+        FoodListing: {
+          include: {
+            business: true,
+            location: true,
+            branch: true,
+          },
+        },
+        customer: {
+          include: {
+            user: {
+              select: {
+                email: true,
+                phone: true,
+              },
+            },
+          },
+        },
+        payment_transactions: {
+          where: {
+            status: "COMPLETED",
+          },
+        },
+      },
+    });
+
+    if (!reservation) {
+      throw new AppError("Reservation not found", 404);
+    }
+
+    // Business can cancel any reservation
+    // Customer can only cancel PENDING reservations without completed payments
+    if (userRole === "CUSTOMER") {
+      if (reservation.status !== "PENDING") {
+        throw new AppError(
+          "You can only cancel reservations in PENDING status",
+          400
+        );
+      }
+
+      if (reservation.payment_transactions.length > 0) {
+        throw new AppError(
+          "Reservation cannot be cancelled after payment",
+          400
+        );
+      }
+    } else {
+      // Business can only cancel if reservation is not already cancelled
+      if (reservation.status === "CANCELLED") {
+        throw new AppError("Reservation is already cancelled", 400);
+      }
+    }
+
+    // Perform transaction to update reservation and listing
+    const updatedReservation = await prisma.$transaction(async (prisma) => {
+      // Update reservation status
+      const updated = await prisma.reservation.update({
+        where: { id: reservationId },
+        data: {
+          status: "CANCELLED",
+          cancellation_reason: cancelReason,
+        },
+        include: {
+          FoodListing: {
+            include: {
+              business: true,
+              location: true,
+              branch: true,
+            },
+          },
+          customer: {
+            include: {
+              user: {
+                select: {
+                  email: true,
+                  phone: true,
+                },
+              },
+            },
+          },
+          reservation_items: true,
+        },
+      });
+
+      // Restore listing quantity
+      await Promise.all(
+        updated.reservation_items.map((item) =>
+          prisma.foodListing.update({
+            where: {
+              id: item.listing_id,
+            },
+            data: {
+              quantity: {
+                increment: item.quantity,
+              },
+            },
+          })
+        )
+      );
+
+      return updated;
+    });
+
+    // Send cancellation email
+    await emailService.sendReservationStatusUpdateEmail(
+      updatedReservation.customer.user.email,
+      {
+        reservationId,
+        status: "CANCELLED",
+        items: updatedReservation.reservation_items.map((item) => ({
+          title: updatedReservation.FoodListing?.title ?? "Untitled",
+          quantity: item.quantity,
+          business_name:
+            updatedReservation.FoodListing?.business.company_name ??
+            "Unknown Business",
+          pickup_address:
+            updatedReservation.FoodListing?.location.address ??
+            "No address provided",
+          branch_info: {
+            name:
+              updatedReservation.FoodListing?.branch?.name ?? "Unknown Branch",
+            branch_code:
+              updatedReservation.FoodListing?.branch?.branch_code ?? "NO_CODE",
+          },
+        })),
+        cancellation_reason: cancelReason,
+        pickup_time: updatedReservation?.pickup_time ?? new Date(),
+        total_amount: 0,
+      }
+    );
+
+    return {
+      reservation: updatedReservation,
+    };
+  }
 }

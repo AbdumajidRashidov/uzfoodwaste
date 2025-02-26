@@ -4,7 +4,9 @@ import { ReservationService } from "../services/reservation.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { AppError } from "../middlewares/error.middleware";
 import { PrismaClient } from "@prisma/client";
+import { EmailService } from "../services/email.service";
 
+const emailService = new EmailService();
 const prisma = new PrismaClient();
 const reservationService = new ReservationService();
 
@@ -221,6 +223,66 @@ export class ReservationController {
       res.status(200).json({
         status: "success",
         data: reservation,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async cancelReservation(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { reservationId } = req.params;
+      const { cancellation_reason } = req.body;
+
+      const user = req?.user;
+
+      const branch = await prisma.branch.findFirst({
+        where: {
+          manager_email: user?.email,
+        },
+      });
+      const businessId = branch?.business_id as string;
+      // Determine actor (customer or business) based on role
+      const actorId = req.user?.customer?.id || businessId;
+      const actorRole = req.user?.role;
+
+      if (!actorId) {
+        throw new AppError("User ID not found", 400);
+      }
+
+      // Validate actor's right to cancel
+      const reservation = await prisma.reservation.findUnique({
+        where: { id: reservationId },
+        include: {
+          FoodListing: true,
+          customer: true,
+        },
+      });
+
+      if (!reservation) {
+        throw new AppError("Reservation not found", 404);
+      }
+
+      // Check cancellation permissions
+      if (
+        (actorRole === "CUSTOMER" && reservation.customer_id !== actorId) ||
+        (actorRole === "BRANCH_MANAGER" &&
+          reservation.FoodListing?.business_id !== actorId)
+      ) {
+        throw new AppError("Not authorized to cancel this reservation", 403);
+      }
+
+      // Use the cancel method from the service
+      const result = await reservationService.cancelReservation(
+        reservationId,
+        actorId,
+        cancellation_reason,
+        actorRole as "CUSTOMER" | "BRANCH_MANAGER"
+      );
+
+      res.status(200).json({
+        status: "success",
+        data: result,
       });
     } catch (error) {
       next(error);

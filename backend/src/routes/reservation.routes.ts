@@ -96,4 +96,19 @@ router.get(
   reservationController.getBusinessReservations
 );
 
+// cancel
+router.post(
+  "/:reservationId/cancel",
+  [
+    body("cancellation_reason")
+      .isString()
+      .notEmpty()
+      .withMessage("Cancellation reason is required")
+      .isLength({ max: 500 })
+      .withMessage("Cancellation reason must be less than 500 characters"),
+  ],
+  validate,
+  reservationController.cancelReservation
+);
+
 export default router;

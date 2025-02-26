@@ -273,3 +273,86 @@
  *       404:
  *         description: Reservation not found
  */
+// Cancellation Swagger Documentation
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     CancelReservationRequest:
+ *       type: object
+ *       required:
+ *         - cancellation_reason
+ *       properties:
+ *         cancellation_reason:
+ *           type: string
+ *           maxLength: 500
+ *           description: Reason for cancelling the reservation
+ *           example: "Changed my plans"
+ *
+ * /api/reservations/{reservationId}/cancel:
+ *   post:
+ *     tags: [Reservations]
+ *     summary: Cancel a reservation
+ *     description: |
+ *       Allows cancellation of a reservation with specific constraints:
+ *       - Customers can only cancel PENDING reservations
+ *       - Customers cannot cancel after payment is processed
+ *       - Businesses can cancel reservations in any status
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reservationId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Unique identifier of the reservation to cancel
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CancelReservationRequest'
+ *           examples:
+ *             customerCancellation:
+ *               value:
+ *                 cancellation_reason: "Changed my plans"
+ *             businessCancellation:
+ *               value:
+ *                 cancellation_reason: "Listing no longer available"
+ *     responses:
+ *       200:
+ *         description: Reservation cancelled successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: object
+ *                   description: Cancelled reservation details
+ *       400:
+ *         description: |
+ *           Bad request scenarios:
+ *           - Reservation already cancelled
+ *           - Attempting to cancel a non-pending reservation as a customer
+ *           - Attempting to cancel after payment
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: error
+ *                 message:
+ *                   type: string
+ *                   example: "You can only cancel pending reservations"
+ *       401:
+ *         description: Unauthorized - Invalid or missing authentication token
+ *       403:
+ *         description: Forbidden - Not authorized to cancel this specific reservation
+ */
