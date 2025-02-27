@@ -103,9 +103,14 @@ export class AuthService {
           user_id: user.id,
         },
       });
+      const customer = await prisma.customer.findUnique({
+        where: {
+          user_id: user.id,
+        },
+      });
 
       const sanitizedUser = excludeSensitiveFields(user);
-      return { ...sanitizedUser, business };
+      return { ...sanitizedUser, business, customer };
     });
 
     // Generate token

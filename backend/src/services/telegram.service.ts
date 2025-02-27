@@ -34,7 +34,9 @@ export class TelegramService {
         const verificationToken = params[1];
 
         if (!verificationToken) {
-          ctx.reply("Please start the bot using the link provided in the app.");
+          ctx.reply(
+            "Iltimos, ilovada keltirilgan havoladan foydalanib botni ishga tushiring."
+          );
           return;
         }
 
@@ -45,18 +47,18 @@ export class TelegramService {
           });
 
           if (!verification || verification.status !== "PENDING") {
-            ctx.reply("Invalid or expired verification link.");
+            ctx.reply("Tasdiqlash havolasi yaroqsiz yoki muddati o‘tgan.");
             return;
           }
 
           await ctx.reply(
-            "Please share your phone number to verify your account.",
+            "Hisobingizni tasdiqlash uchun telefon raqamingizni ulashing.",
             {
               reply_markup: {
                 keyboard: [
                   [
                     {
-                      text: "Share Phone Number",
+                      text: "Telefon raqamingizni ulashing",
                       request_contact: true,
                     },
                   ],
@@ -76,7 +78,9 @@ export class TelegramService {
           });
         } catch (error) {
           console.error("Telegram verification error:", error);
-          ctx.reply("An error occurred during verification. Please try again.");
+          ctx.reply(
+            "Tekshirish paytida xatolik yuz berdi. Iltimos, qayta urinib koʻring."
+          );
         }
       });
 
@@ -85,7 +89,7 @@ export class TelegramService {
         const contact = ctx.message.contact;
 
         if (!contact || !contact.phone_number) {
-          ctx.reply("Invalid phone number received.");
+          ctx.reply("Yaroqsiz telefon raqami qabul qilindi.");
           return;
         }
 
@@ -102,7 +106,7 @@ export class TelegramService {
           });
 
           if (!verification) {
-            ctx.reply("No pending verification found.");
+            ctx.reply("Kutilayotgan verifikatsiya topilmadi.");
             return;
           }
 
@@ -114,6 +118,7 @@ export class TelegramService {
               data: {
                 phone: phoneNumber,
                 phone_verified: true,
+                is_verified: true,
               },
             }),
             prisma.telegramVerification.update({
@@ -127,11 +132,13 @@ export class TelegramService {
           ]);
 
           await ctx.reply(
-            "Phone number verified successfully! You can now close this chat and return to the app."
+            "Telefon raqami tasdiqlandi! Endi siz ushbu chatni yopishingiz va ilovaga qaytishingiz mumkin."
           );
         } catch (error) {
           console.error("Phone verification error:", error);
-          ctx.reply("An error occurred during verification. Please try again.");
+          ctx.reply(
+            "Tekshirish paytida xatolik yuz berdi. Iltimos, qayta urinib koʻring."
+          );
         }
       });
 
