@@ -424,6 +424,12 @@ export class FoodListingService {
       throw new AppError("Cannot delete listing with active reservations", 400);
     }
 
+    await prisma.listingCategory.deleteMany({
+      where: {
+        listing_id: listingId,
+      },
+    });
+
     // Delete listing
     await prisma.foodListing.delete({
       where: { id: listingId },
