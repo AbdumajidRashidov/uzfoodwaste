@@ -149,6 +149,12 @@ export class AuthService {
       },
     });
 
+    const branch = await prisma.branch.findFirst({
+      where: {
+        manager_email: user?.email,
+      },
+    });
+
     return {
       token,
       user: {
@@ -158,6 +164,7 @@ export class AuthService {
         is_verified: user.is_verified,
         customer,
         business,
+        branch,
       },
     };
   }

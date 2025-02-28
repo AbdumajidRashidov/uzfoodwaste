@@ -90,7 +90,7 @@ router.get(
 
 router.get(
   "/:branchId/analytics",
-  authorize("BUSINESS"),
+  authorize("BUSINESS", "BRANCH_MANAGER"),
   [query("period").optional().isIn(["week", "month", "year"])],
   validate,
   branchController.getBranchAnalytics
