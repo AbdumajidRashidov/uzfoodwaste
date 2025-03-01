@@ -43,10 +43,12 @@ router.post(
   authorize("CUSTOMER"),
   [
     body("reservation_id").isString().notEmpty(),
-    body("rating").isInt({ min: 1, max: 5 }),
-    body("comment").isString().notEmpty(),
-    body("images").optional().isArray(),
-    body("images.*").optional().isString(),
+    body("item_reviews").isArray({ min: 1 }),
+    body("item_reviews.*.listing_id").isString().notEmpty(),
+    body("item_reviews.*.rating").isInt({ min: 1, max: 5 }),
+    body("item_reviews.*.comment").isString().notEmpty(),
+    body("item_reviews.*.images").optional().isArray(),
+    body("item_reviews.*.images.*").optional().isString(),
   ],
   validate,
   reviewController.createReview

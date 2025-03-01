@@ -42,7 +42,7 @@ export class ReviewService {
     }
 
     // Validate all items belong to the reservation
-    for (const review of data.item_reviews) {
+    for (const review of data?.item_reviews) {
       const item = reservation.reservation_items.find(
         (i) => i.listing_id === review.listing_id
       );

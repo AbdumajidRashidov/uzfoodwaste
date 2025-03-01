@@ -96,7 +96,7 @@
  * /api/reviews:
  *   post:
  *     summary: Create a new review
- *     description: Create a review for a completed reservation. Only one review per reservation is allowed.
+ *     description: Create one or more reviews for items in a completed reservation. Each item in the reservation can be reviewed.
  *     tags: [Reviews]
  *     security:
  *       - bearerAuth: []
@@ -108,33 +108,53 @@
  *             type: object
  *             required:
  *               - reservation_id
- *               - rating
- *               - comment
+ *               - item_reviews
  *             properties:
  *               reservation_id:
  *                 type: string
  *                 format: uuid
  *                 description: ID of the completed reservation
- *               rating:
- *                 type: integer
- *                 minimum: 1
- *                 maximum: 5
- *                 description: Rating from 1 to 5 stars
- *               comment:
- *                 type: string
- *                 description: Review comment text
- *               images:
+ *               item_reviews:
  *                 type: array
  *                 items:
- *                   type: string
- *                 description: Optional array of image URLs
+ *                   type: object
+ *                   required:
+ *                     - listing_id
+ *                     - rating
+ *                     - comment
+ *                   properties:
+ *                     listing_id:
+ *                       type: string
+ *                       format: uuid
+ *                       description: ID of the listing being reviewed
+ *                     rating:
+ *                       type: integer
+ *                       minimum: 1
+ *                       maximum: 5
+ *                       description: Rating from 1 to 5 stars
+ *                     comment:
+ *                       type: string
+ *                       description: Review comment text
+ *                     images:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: Optional array of image URLs
  *     responses:
  *       201:
- *         description: Review created successfully
+ *         description: Reviews created successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/ReviewResponse'
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Review'
  *       400:
  *         $ref: '#/components/responses/ValidationError'
  *       401:
