@@ -91,19 +91,9 @@ export class QRCodeService {
         const businessId = item.listing.business_id;
         if (!acc[businessId]) {
           acc[businessId] = {
-            business_name: item.listing.business.company_name,
             business_id: businessId,
             items: [],
-            branch_info: item.listing.branch
-              ? {
-                  name: item.listing.branch.name,
-                  branch_code: item.listing.branch.branch_code,
-                  branch_id: item.listing.branch.id,
-                  operating_hours: item.listing.branch.operating_hours,
-                  manager_name: item.listing.branch.manager_name,
-                  manager_phone: item.listing.branch.manager_phone,
-                }
-              : null,
+            branch_id: item?.listing?.branch?.id,
           };
         }
 
@@ -124,9 +114,6 @@ export class QRCodeService {
     const qrData = {
       reservation_id: reservationId,
       reservation_number: reservation.reservation_number,
-      confirmation_code: confirmationCode,
-      pickup_time: reservation.pickup_time,
-      status: reservation.status,
       items_by_business: Object.values(businessItems),
       customer: {
         name: `${reservation.customer.first_name} ${reservation.customer.last_name}`,
