@@ -30,6 +30,12 @@ export class AuthService {
       } as jwt.SignOptions
     );
   }
+  private generateCompanyCode(companyName: string): string {
+    // Use first 3 letters of company name + 4-digit number
+    const namePrefix = companyName.substring(0, 3).toUpperCase();
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    return `${namePrefix}${randomNum}`;
+  }
   async register(userData: {
     email: string;
     password: string;
@@ -84,10 +90,14 @@ export class AuthService {
         userData.legalName &&
         userData.taxNumber
       ) {
+        // Generate a company code
+        const companyCode = this.generateCompanyCode(userData.companyName);
+
         await prisma.business.create({
           data: {
             user_id: user.id,
             company_name: userData.companyName,
+            company_code: companyCode, // Add the required company_code
             legal_name: userData.legalName,
             tax_number: userData.taxNumber,
             business_license: "", // Required fields that should be updated later

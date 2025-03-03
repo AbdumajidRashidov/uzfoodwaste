@@ -80,6 +80,41 @@ export class ReservationController {
     }
   }
 
+  async verifyPickupByNumber(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const { reservation_number, confirmation_code } = req.body;
+      const user = req?.user;
+
+      const branch = await prisma.branch.findFirst({
+        where: {
+          manager_email: user?.email,
+        },
+      });
+      const businessId = branch?.business_id as string;
+
+      if (!businessId) {
+        throw new AppError("Business authentication required", 401);
+      }
+
+      const result = await reservationService.verifyPickupByNumber(
+        reservation_number,
+        confirmation_code,
+        businessId
+      );
+
+      res.status(200).json({
+        status: "success",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getReservationStatus(
     req: AuthRequest,
     res: Response,
@@ -208,7 +243,10 @@ export class ReservationController {
     try {
       const { reservationId } = req.params;
       const actorId = req.user?.customer?.id || req.user?.business?.id;
-      const actorRole = req.user?.role as "CUSTOMER" | "BUSINESS";
+      const actorRole = req.user?.role as
+        | "CUSTOMER"
+        | "BUSINESS"
+        | "BRANCH_MANAGER";
 
       if (!actorId) {
         throw new AppError("User authentication required", 401);
@@ -216,6 +254,38 @@ export class ReservationController {
 
       const reservation = await reservationService.getReservation(
         reservationId,
+        actorId,
+        actorRole
+      );
+
+      res.status(200).json({
+        status: "success",
+        data: reservation,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getReservationByNumber(
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const { reservationNumber } = req.params;
+      const actorId = req.user?.customer?.id || req.user?.business?.id;
+      const actorRole = req.user?.role as
+        | "CUSTOMER"
+        | "BUSINESS"
+        | "BRANCH_MANAGER";
+
+      if (!actorId) {
+        throw new AppError("User authentication required", 401);
+      }
+
+      const reservation = await reservationService.getReservationByNumber(
+        reservationNumber,
         actorId,
         actorRole
       );
@@ -244,32 +314,13 @@ export class ReservationController {
       const businessId = branch?.business_id as string;
       // Determine actor (customer or business) based on role
       const actorId = req.user?.customer?.id || businessId;
-      const actorRole = req.user?.role;
+      const actorRole = req.user?.role as
+        | "CUSTOMER"
+        | "BUSINESS"
+        | "BRANCH_MANAGER";
 
       if (!actorId) {
         throw new AppError("User ID not found", 400);
-      }
-
-      // Validate actor's right to cancel
-      const reservation = await prisma.reservation.findUnique({
-        where: { id: reservationId },
-        include: {
-          FoodListing: true,
-          customer: true,
-        },
-      });
-
-      if (!reservation) {
-        throw new AppError("Reservation not found", 404);
-      }
-
-      // Check cancellation permissions
-      if (
-        (actorRole === "CUSTOMER" && reservation.customer_id !== actorId) ||
-        (actorRole === "BRANCH_MANAGER" &&
-          reservation.FoodListing?.business_id !== actorId)
-      ) {
-        throw new AppError("Not authorized to cancel this reservation", 403);
       }
 
       // Use the cancel method from the service
@@ -277,7 +328,7 @@ export class ReservationController {
         reservationId,
         actorId,
         cancellation_reason,
-        actorRole as "CUSTOMER" | "BRANCH_MANAGER"
+        actorRole
       );
 
       res.status(200).json({

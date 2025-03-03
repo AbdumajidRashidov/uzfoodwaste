@@ -413,7 +413,7 @@ export class FoodListingService {
     // Check if listing has any active reservations
     const activeReservations = await prisma.reservation.findFirst({
       where: {
-        foodListingId: listingId,
+        food_listing_id: listingId,
         status: {
           in: ["PENDING", "CONFIRMED"],
         },

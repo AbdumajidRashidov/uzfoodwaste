@@ -66,6 +66,7 @@ model Business {
   id                     String  @id @default(uuid())
   user_id                String  @unique
   company_name           String  @unique
+  company_code           String  @unique // This should be unique and required for reservation number generation
   legal_name             String
   tax_number             String  @unique
   business_license       String
@@ -211,33 +212,38 @@ model SavedListing {
 model Reservation {
   id                  String    @id @default(uuid())
   customer_id         String
-  status              String    @default("PENDING") // PENDING, CONFIRMED, COMPLETED, CANCELLED
-  created_at          DateTime  @default(now())
-  updated_at          DateTime  @updatedAt
+  reservation_number  String    @unique // New field for human-readable reference
+  total_amount        Decimal
+  status              String    @default("PENDING") // "PENDING", "CONFIRMED", "COMPLETED", "CANCELLED"
   pickup_time         DateTime?
-  cancellation_reason String?
   confirmation_code   String?
   pickup_confirmed_at DateTime?
-  total_amount        Decimal   @db.Decimal(10, 2)
+  cancellation_reason String?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
 
-  // Relations
+  // Relationships
   customer             Customer             @relation(fields: [customer_id], references: [id])
   reservation_items    ReservationItem[]
   payment_transactions PaymentTransaction[]
   reviews              Review[]
-  FoodListing          FoodListing?         @relation(fields: [foodListingId], references: [id])
-  foodListingId        String?
+  FoodListing          FoodListing?         @relation(fields: [food_listing_id], references: [id])
+  food_listing_id      String?
 
   @@index([customer_id])
+  @@index([reservation_number])
   @@index([status])
 }
 
 model ReservationItem {
-  id             String  @id @default(uuid())
+  id             String   @id @default(uuid())
   reservation_id String
   listing_id     String
-  quantity       Int     @default(1)
-  price          Decimal @db.Decimal(10, 2)
+  quantity       Int      @default(1)
+  price          Decimal  @db.Decimal(10, 2)
+  status         String   @default("PENDING") // "PENDING", "COMPLETED", "CANCELLED"
+  created_at     DateTime @default(now())
+  updated_at     DateTime @default(now()) @updatedAt
 
   // Relations
   reservation Reservation @relation(fields: [reservation_id], references: [id])
@@ -245,6 +251,7 @@ model ReservationItem {
 
   @@index([reservation_id])
   @@index([listing_id])
+  @@index([status])
 }
 
 model Review {

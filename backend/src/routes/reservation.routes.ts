@@ -3,7 +3,7 @@ import { Router } from "express";
 import { ReservationController } from "../controllers/reservation.controller";
 import { protect, authorize } from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validation.middleware";
-import { body, query } from "express-validator";
+import { body, query, param } from "express-validator";
 
 const router = Router();
 const reservationController = new ReservationController();
@@ -22,6 +22,10 @@ router.post(
     body("pickup_time")
       .isISO8601()
       .withMessage("Valid pickup time is required"),
+    body("allow_multiple_businesses")
+      .optional()
+      .isBoolean()
+      .withMessage("allow_multiple_businesses must be a boolean"),
   ],
   validate,
   reservationController.createReservation
@@ -40,13 +44,25 @@ router.post(
   reservationController.processPayment
 );
 
-// Verify pickup
+// Verify pickup by ID
 router.post(
   "/:reservationId/verify",
   authorize("BUSINESS", "BRANCH_MANAGER"),
   [body("confirmation_code").isString().notEmpty()],
   validate,
   reservationController.verifyPickup
+);
+
+// Verify pickup by reservation number
+router.post(
+  "/verify-by-number",
+  authorize("BUSINESS", "BRANCH_MANAGER"),
+  [
+    body("reservation_number").isString().notEmpty(),
+    body("confirmation_code").isString().notEmpty(),
+  ],
+  validate,
+  reservationController.verifyPickupByNumber
 );
 
 // Get reservation QR code
@@ -58,8 +74,21 @@ router.get(
   reservationController.getReservationStatus
 );
 
-// Get single reservation
+// Get single reservation by ID
 router.get("/:reservationId", reservationController.getReservation);
+
+// Get single reservation by number
+router.get(
+  "/number/:reservationNumber",
+  [
+    param("reservationNumber")
+      .isString()
+      .notEmpty()
+      .withMessage("Reservation number is required"),
+  ],
+  validate,
+  reservationController.getReservationByNumber
+);
 
 // Get customer reservations
 router.get(
@@ -96,7 +125,7 @@ router.get(
   reservationController.getBusinessReservations
 );
 
-// cancel
+// Cancel reservation
 router.post(
   "/:reservationId/cancel",
   [

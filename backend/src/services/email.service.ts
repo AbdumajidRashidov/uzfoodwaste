@@ -245,7 +245,7 @@ export class EmailService {
 
   private getStatusUpdateTemplate(
     data: ReservationEmailData & {
-      status: "CONFIRMED" | "CANCELLED" | "COMPLETED";
+      status: "CONFIRMED" | "CANCELLED" | "COMPLETED" | "PARTIALLY_CANCELLED";
       cancellation_reason?: string;
     }
   ): EmailTemplate {
@@ -253,6 +253,7 @@ export class EmailService {
       CONFIRMED: "#28a745",
       CANCELLED: "#dc3545",
       COMPLETED: "#17a2b8",
+      PARTIALLY_CANCELLED: "#ffa500",
     };
 
     return {
@@ -335,6 +336,7 @@ export class EmailService {
     to: string,
     data: {
       reservationId: string;
+      reservationNumber: string;
       items: Array<{
         title: string;
         quantity: number;
@@ -369,7 +371,8 @@ export class EmailService {
     to: string,
     data: {
       reservationId: string;
-      status: "CONFIRMED" | "CANCELLED" | "COMPLETED";
+      reservationNumber: string;
+      status: "CONFIRMED" | "CANCELLED" | "COMPLETED" | "PARTIALLY_CANCELLED";
       items: Array<{
         title: string;
         quantity: number;
