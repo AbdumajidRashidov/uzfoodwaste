@@ -69,97 +69,106 @@ export class ReservationService {
     data: {
       items: ReservationItem[];
       pickup_time: Date;
-      allow_multiple_businesses?: boolean; // New option to allow items from different businesses
+      allow_multiple_businesses?: boolean;
     }
   ) {
-    return await prisma.$transaction(async (prisma) => {
-      // Validate all listings and calculate total
-      const listingDetails = await Promise.all(
-        data.items.map((item) =>
-          prisma.foodListing.findUnique({
-            where: { id: item.listing_id },
-            include: {
-              business: true,
-              location: true,
-              branch: true,
-            },
-          })
-        )
-      );
-
-      // Validate listings are available
-      listingDetails.forEach((listing, index) => {
-        if (!listing || listing.status !== "AVAILABLE") {
-          throw new AppError(
-            `Listing ${data.items[index].listing_id} not available`,
-            400
-          );
-        }
-
-        // Validate quantity
-        if (listing.quantity < data.items[index].quantity) {
-          throw new AppError(
-            `Not enough quantity available for ${listing.title}. Available: ${listing.quantity}`,
-            400
-          );
-        }
-      });
-
-      // Check if items are from multiple businesses
-      const businessIds = listingDetails.map((listing) => listing?.business_id);
-      const uniqueBusinessIds = new Set(businessIds);
-
-      // If multiple businesses and not explicitly allowed, throw error
-      if (uniqueBusinessIds.size > 1 && !data.allow_multiple_businesses) {
-        throw new AppError(
-          "Items must be from the same business. Set allow_multiple_businesses to true if you want to proceed.",
-          400
-        );
-      }
-
-      let reservations: Reservation[] = [];
-
-      if (uniqueBusinessIds.size > 1 && data.allow_multiple_businesses) {
-        // Create separate reservations for each business
-        const itemsByBusiness: Record<
-          string,
-          {
-            items: { item: ReservationItem; listing: any }[];
-            businessCode: string;
-          }
-        > = {};
-
-        // Group items by business
-        data.items.forEach((item, index) => {
-          const businessId = listingDetails[index]?.business_id;
-          if (businessId && !itemsByBusiness[businessId]) {
-            itemsByBusiness[businessId] = {
-              items: [],
-              businessCode:
-                listingDetails[index]?.business.company_code || "BIZ",
-            };
-          }
-          itemsByBusiness[businessId ? businessId : ""]?.items.push({
-            item,
-            listing: listingDetails[index],
-          });
+    // 1. Increase transaction timeout to avoid timeout errors
+    return await prisma.$transaction(
+      async (prisma) => {
+        // 2. Fetch all listings in a single query instead of using Promise.all with multiple queries
+        const listingIds = data.items.map((item) => item.listing_id);
+        const listingsWithDetails = await prisma.foodListing.findMany({
+          where: {
+            id: { in: listingIds },
+          },
+          include: {
+            business: true,
+            location: true,
+            branch: true,
+          },
         });
 
-        // Create a reservation for each business
-        reservations = await Promise.all(
-          Object.entries(itemsByBusiness).map(
-            async ([businessId, businessData]: [string, any]) => {
-              const reservationNumber = await generateReservationNumber(
-                businessData.businessCode
-              );
+        // Create a map for faster lookup
+        const listingMap = new Map();
+        listingsWithDetails.forEach((listing) => {
+          listingMap.set(listing.id, listing);
+        });
 
-              const businessTotal = businessData.items.reduce(
-                (sum: number, { item, listing }: any) =>
-                  sum + listing.price.toNumber() * item.quantity,
-                0
-              );
+        // 3. Validate listings more efficiently
+        for (const item of data.items) {
+          const listing = listingMap.get(item.listing_id);
 
-              return prisma.reservation.create({
+          if (!listing || listing.status !== "AVAILABLE") {
+            throw new AppError(`Listing ${item.listing_id} not available`, 400);
+          }
+
+          if (listing.quantity < item.quantity) {
+            throw new AppError(
+              `Not enough quantity available for ${listing.title}. Available: ${listing.quantity}`,
+              400
+            );
+          }
+        }
+
+        // 4. Check for multiple businesses
+        const businessIds = [
+          ...new Set(listingsWithDetails.map((listing) => listing.business_id)),
+        ];
+
+        if (businessIds.length > 1 && !data.allow_multiple_businesses) {
+          throw new AppError(
+            "Items must be from the same business. Set allow_multiple_businesses to true if you want to proceed.",
+            400
+          );
+        }
+
+        let reservations: Reservation[] = [];
+
+        if (businessIds.length > 1 && data.allow_multiple_businesses) {
+          // 5. Group items by business more efficiently
+          const itemsByBusiness = new Map<
+            string,
+            {
+              items: { item: ReservationItem; listing: any }[];
+              businessCode: string;
+            }
+          >();
+
+          for (const item of data.items) {
+            const listing = listingMap.get(item.listing_id);
+            if (!listing) continue;
+
+            const businessId = listing.business_id;
+
+            if (!itemsByBusiness.has(businessId)) {
+              itemsByBusiness.set(businessId, {
+                items: [],
+                businessCode: listing.business.company_code || "BIZ",
+              });
+            }
+
+            itemsByBusiness.get(businessId)?.items.push({
+              item,
+              listing,
+            });
+          }
+
+          // 6. Prepare all reservation data before creating them
+          const reservationCreations = [];
+
+          for (const [businessId, businessData] of itemsByBusiness.entries()) {
+            const reservationNumber = await generateReservationNumber(
+              businessData.businessCode
+            );
+
+            const businessTotal = businessData.items.reduce(
+              (sum: number, { item, listing }: any) =>
+                sum + listing.price.toNumber() * item.quantity,
+              0
+            );
+
+            reservationCreations.push(
+              prisma.reservation.create({
                 data: {
                   customer_id: customerId,
                   pickup_time: data.pickup_time,
@@ -201,94 +210,134 @@ export class ReservationService {
                     },
                   },
                 },
-              });
-            }
-          )
-        );
+              })
+            );
+          }
 
-        // Update listing quantities for all items
-        await Promise.all(
-          data.items.map((item) =>
-            prisma.foodListing.update({
-              where: { id: item.listing_id },
-              data: { quantity: { decrement: item.quantity } },
-            })
-          )
-        );
-      } else {
-        // Single business - create one reservation
-        const businessId = listingDetails[0]?.business_id;
-        const business = await prisma.business.findUnique({
-          where: { id: businessId },
-          select: { company_code: true },
-        });
+          // Create all reservations in parallel
+          reservations = await Promise.all(reservationCreations);
 
-        const businessCode = business?.company_code || "BIZ";
-        const reservationNumber = await generateReservationNumber(businessCode);
-
-        // Calculate total amount
-        const totalAmount = listingDetails.reduce(
-          (sum, listing, index) =>
-            listing
-              ? sum + listing.price.toNumber() * data.items[index].quantity
-              : sum,
-          0
-        );
-
-        // Create reservation
-        const reservation = await prisma.reservation.create({
-          data: {
-            customer_id: customerId,
-            pickup_time: data.pickup_time,
-            total_amount: totalAmount,
-            status: "PENDING",
-            reservation_number: reservationNumber,
-            reservation_items: {
-              create: data.items.map((item, index) => ({
-                listing_id: item.listing_id,
-                quantity: item.quantity,
-                price: listingDetails[index] ? listingDetails[index].price : 0,
-                status: "PENDING",
-              })),
+          // 7. Batch update listing quantities
+          await prisma.foodListing.updateMany({
+            where: {
+              id: {
+                in: data.items.map((item) => item.listing_id),
+              },
             },
-          },
-          include: {
-            reservation_items: {
-              include: {
-                listing: {
-                  include: {
-                    business: true,
-                    location: true,
-                    branch: true,
+            data: {
+              quantity: {
+                decrement: 1, // Note: This is a limitation, see comment below
+              },
+            },
+          });
+
+          // Since updateMany can't decrement by different values for each item,
+          // we need individual updates for items with quantity > 1
+          const itemsWithHigherQuantity = data.items.filter(
+            (item) => item.quantity > 1
+          );
+          if (itemsWithHigherQuantity.length > 0) {
+            await Promise.all(
+              itemsWithHigherQuantity.map((item) =>
+                prisma.foodListing.update({
+                  where: { id: item.listing_id },
+                  data: { quantity: { decrement: item.quantity - 1 } },
+                })
+              )
+            );
+          }
+        } else {
+          // Single business - create one reservation
+          const listing = listingsWithDetails[0];
+          const businessCode = listing?.business.company_code || "BIZ";
+          const reservationNumber = await generateReservationNumber(
+            businessCode
+          );
+
+          // Calculate total amount more efficiently
+          const totalAmount = data.items.reduce((sum, item) => {
+            const listing = listingMap.get(item.listing_id);
+            return listing
+              ? sum + listing.price.toNumber() * item.quantity
+              : sum;
+          }, 0);
+
+          // Create reservation
+          const reservation = await prisma.reservation.create({
+            data: {
+              customer_id: customerId,
+              pickup_time: data.pickup_time,
+              total_amount: totalAmount,
+              status: "PENDING",
+              reservation_number: reservationNumber,
+              reservation_items: {
+                create: data.items.map((item) => ({
+                  listing_id: item.listing_id,
+                  quantity: item.quantity,
+                  price: listingMap.get(item.listing_id)?.price || 0,
+                  status: "PENDING",
+                })),
+              },
+            },
+            include: {
+              reservation_items: {
+                include: {
+                  listing: {
+                    include: {
+                      business: true,
+                      location: true,
+                      branch: true,
+                    },
                   },
                 },
               },
-            },
-            customer: {
-              include: {
-                user: true,
+              customer: {
+                include: {
+                  user: true,
+                },
               },
             },
-          },
-        });
+          });
 
-        reservations = [reservation];
+          reservations = [reservation];
 
-        // Update listing quantities
-        await Promise.all(
-          data.items.map((item) =>
-            prisma.foodListing.update({
-              where: { id: item.listing_id },
-              data: { quantity: { decrement: item.quantity } },
-            })
-          )
-        );
+          // 8. Batch update listing quantities for the single business case
+          await prisma.foodListing.updateMany({
+            where: {
+              id: {
+                in: data.items.map((item) => item.listing_id),
+              },
+            },
+            data: {
+              quantity: {
+                decrement: 1,
+              },
+            },
+          });
+
+          // Handle items with quantity > 1
+          const itemsWithHigherQuantity = data.items.filter(
+            (item) => item.quantity > 1
+          );
+          if (itemsWithHigherQuantity.length > 0) {
+            await Promise.all(
+              itemsWithHigherQuantity.map((item) =>
+                prisma.foodListing.update({
+                  where: { id: item.listing_id },
+                  data: { quantity: { decrement: item.quantity - 1 } },
+                })
+              )
+            );
+          }
+        }
+
+        return businessIds.length > 1 ? { reservations } : reservations[0];
+      },
+      {
+        // 9. Increase the transaction timeout
+        timeout: 10000, // ms (10 seconds)
       }
-
-      // For multiple reservations, we return an array
-      // For backward compatibility, if there's just one reservation, return it directly
-      return uniqueBusinessIds.size > 1 ? { reservations } : reservations[0];
-    });
+    );
   }
 
   async processPaymentAndGenerateQR(

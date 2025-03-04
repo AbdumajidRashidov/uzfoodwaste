@@ -120,7 +120,19 @@ export class AuthService {
       });
 
       const sanitizedUser = excludeSensitiveFields(user);
-      return { ...sanitizedUser, business, customer };
+
+      const userByRole = sanitizedUser.role == "BUSINESS" ? business : customer;
+
+      return {
+        id: sanitizedUser.id,
+        email: sanitizedUser.email,
+        phone: sanitizedUser.phone,
+        role: sanitizedUser.role,
+        is_verified: sanitizedUser.is_verified,
+        language_preference: sanitizedUser.language_preference,
+        phone_verified: sanitizedUser.phone_verified,
+        userByRole,
+      };
     });
 
     // Generate token
