@@ -101,18 +101,9 @@ export class FileService {
         });
 
         blobStream.on("finish", async () => {
-          try {
-            // Generate signed URL with 7 days expiration
-            const [signedUrl] = await blob.getSignedUrl({
-              version: "v4",
-              action: "read",
-              expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
-            });
-
-            resolve(signedUrl);
-          } catch (error) {
-            reject(new AppError("Error generating signed URL", 500));
-          }
+          // Generate public URL instead of signed URL
+          const publicUrl = `https://storage.googleapis.com/${this.bucket}/${fileName}`;
+          resolve(publicUrl);
         });
 
         blobStream.end(file.buffer);
@@ -123,12 +114,14 @@ export class FileService {
   }
 
   // Delete file from cloud storage
+  // Delete file from cloud storage
   public async deleteFromCloud(fileUrl: string): Promise<void> {
     try {
-      // Extract file path from signed URL
+      // Extract file path from public URL
       const urlObj = new URL(fileUrl);
       const pathname = urlObj.pathname;
-      const fileName = pathname.split("/").slice(2).join("/"); // Remove /storage.googleapis.com/bucket-name/
+      // Remove /bucketName/ from the pathname
+      const fileName = pathname.split("/").slice(2).join("/");
 
       const file = this.storage.bucket(this.bucket).file(fileName);
 
