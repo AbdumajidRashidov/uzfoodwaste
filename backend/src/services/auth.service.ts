@@ -194,10 +194,11 @@ export class AuthService {
     try {
       const ticket = await googleClient.verifyIdToken({
         idToken: token,
-        audience: config.google.clientId,
+        // audience: config.google.clientId,
       });
 
       const payload = ticket.getPayload();
+
       if (!payload) {
         throw new AppError("Invalid Google token", 401);
       }
@@ -217,7 +218,7 @@ export class AuthService {
               password: "", // Google auth doesn't need password
               phone: "", // Will need to be updated later
               role: "CUSTOMER", // Default role
-              is_verified: true, // Google verified email
+              is_verified: payload.email_verified, // Google verified email
             },
           });
 
@@ -239,17 +240,19 @@ export class AuthService {
 
       // Generate token
       const jwtToken = this.generateToken(user.id);
-
+      const sanitizedUser = excludeSensitiveFields(user);
+      let customer = await prisma.customer.findUnique({
+        where: { user_id: user.id },
+      });
       return {
         token: jwtToken,
         user: {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-          is_verified: user.is_verified,
+          ...sanitizedUser,
         },
+        customer: customer,
       };
     } catch (error) {
+      console.log(error);
       throw new AppError("Invalid Google token", 401);
     }
   }
